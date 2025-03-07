@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERFISH Subcellular Visualization</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="container">
+        <div id="visualization"></div>
+        <div id="controls">
+            <div class="control-group">
+                <h3>Gene Selection</h3>
+                <div id="gene-selector">
+                    <select id="gene-select">
+                        <option value="Gad1">Gad1</option>
+                        <option value="Itgax">Itgax</option>
+                        <option value="Slc17a7">Slc17a7</option>
+                        <option value="Tmem119">Tmem119</option>
+                        <option value="Trem2">Trem2</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control-group">
+                <h3>Display Options</h3>
+                <div class="control-item">
+                    <label for="show-boundaries-checkbox">
+                        <input type="checkbox" id="show-boundaries-checkbox" checked>
+                        Show Cell Boundaries
+                    </label>
+                </div>
+                <div class="control-item">
+                    <label for="point-size-input">Point Size: <span id="point-size-value">2</span></label>
+                    <input type="range" id="point-size-input" min="0.1" max="5" step="0.1" value="2">
+                </div>
+                <div class="control-item">
+                    <label for="boundary-opacity-input">Boundary Opacity: <span id="boundary-opacity-value">0.5</span></label>
+                    <input type="range" id="boundary-opacity-input" min="0" max="1" step="0.05" value="0.5">
+                </div>
+            </div>
+            <div class="control-group">
+                <h3>Gene Transformations</h3>
+                <div class="control-item">
+                    <label for="gene-flip-x-checkbox">
+                        <input type="checkbox" id="gene-flip-x-checkbox">
+                        Flip X Axis
+                    </label>
+                </div>
+                <div class="control-item">
+                    <label for="gene-flip-y-checkbox">
+                        <input type="checkbox" id="gene-flip-y-checkbox">
+                        Flip Y Axis
+                    </label>
+                </div>
+                <div class="control-item">
+                    <label for="gene-swap-xy-checkbox">
+                        <input type="checkbox" id="gene-swap-xy-checkbox">
+                        Swap X and Y Axes
+                    </label>
+                </div>
+            </div>
+            <div class="control-group">
+                <h3>Cell Boundary Transformations</h3>
+                <div class="control-item">
+                    <label for="boundary-flip-x-checkbox">
+                        <input type="checkbox" id="boundary-flip-x-checkbox">
+                        Flip X Axis
+                    </label>
+                </div>
+                <div class="control-item">
+                    <label for="boundary-flip-y-checkbox">
+                        <input type="checkbox" id="boundary-flip-y-checkbox">
+                        Flip Y Axis
+                    </label>
+                </div>
+                <div class="control-item">
+                    <label for="boundary-swap-xy-checkbox">
+                        <input type="checkbox" id="boundary-swap-xy-checkbox">
+                        Swap X and Y Axes
+                    </label>
+                </div>
+            </div>
+            <div class="control-group">
+                <h3>Performance</h3>
+                <div class="control-item">
+                    <label for="lod-threshold-input">Level of Detail: <span id="lod-threshold-value">1</span> (Max = All Points)</label>
+                    <input type="range" id="lod-threshold-input" min="0.1" max="5" step="0.1" value="1">
+                </div>
+                <div class="control-item">
+                    <label for="boundary-subsample-input">Boundary Subsampling: <span id="boundary-subsample-value">10</span></label>
+                    <input type="range" id="boundary-subsample-input" min="1" max="20" step="1" value="10">
+                </div>
+            </div>
+            <div class="stats">
+                <p>Points Rendered: <span id="points-rendered-value">0</span></p>
+                <p>Boundaries Rendered: <span id="boundaries-rendered-value">0</span></p>
+                <p>FPS: <span id="fps-value">0</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application scripts -->
+    <script type="module" src="main.js"></script>
+</body>
+</html>
