@@ -2,6 +2,7 @@
 node_modules/
 cell_boundaries/
 genes/
+genes_csv_gz/
 npm-debug.log
 yarn-debug.log
 yarn-error.log

@@ -33,7 +33,7 @@ export class GeneLoader {
     }
     
     /**
-     * Load gene data from JSON file
+     * Load gene data from gzipped CSV file
      * @param {string} geneName - Name of the gene to load
      */
     async loadGeneData(geneName) {
@@ -45,17 +45,40 @@ export class GeneLoader {
                     if (object.geometry) object.geometry.dispose();
                     if (object.material) object.material.dispose();
                 });
+                this.genePointsGroup = null;
             }
             
             console.log(`Loading gene data for ${geneName}...`);
             
-            // Fetch gene data
-            const response = await fetch(`genes/${geneName}_coords.json`);
+            // Fetch gzipped CSV data
+            const response = await fetch(`genes_csv_gz/${geneName}.csv.gz`);
             if (!response.ok) {
                 throw new Error(`Failed to load gene data for ${geneName}: ${response.status} ${response.statusText}`);
             }
             
-            const pointsData = await response.json();
+            // Get the compressed data as an ArrayBuffer
+            const compressedData = await response.arrayBuffer();
+            // console.log(`Received compressed data, size: ${compressedData.byteLength} bytes`);
+            // console.log('First 100 bytes:', new Uint8Array(compressedData).slice(0, 4));
+
+            const unzippedData = new Uint8Array(compressedData);
+            // console.log(`Unzipped data size: ${unzippedData.length} bytes`);
+
+            const decompressed = new TextDecoder().decode(unzippedData);
+            // console.log(`Decompressed text length: ${decompressed.length} characters`);
+            // console.log('First 100 characters:', decompressed.substring(0, 100));
+
+            // Parse CSV data
+            const lines = decompressed.split('\n').filter(line => line.trim());
+            // console.log(`Found ${lines.length} non-empty lines`);
+            // console.log('First line sample:', lines[0]);
+
+            const pointsData = lines.map(line => {
+                const [x, y] = line.split(',').map(Number);
+                return { x, y };
+            });
+            // console.log(`Parsed ${pointsData.length} coordinate pairs`);
+            // console.log('First coordinate sample:', pointsData[0]);
             
             // Store original points
             this.originalPoints = pointsData;
