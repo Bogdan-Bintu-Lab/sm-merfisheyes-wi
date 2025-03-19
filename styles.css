@@ -80,3 +80,31 @@ select, button {
 canvas {
     display: block;
 }
+
+/* Hover window styles */
+#hover-window {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+    transition: opacity 0.2s ease;
+}
+
+.hover-content {
+    max-width: 200px;
+}
+
+#hover-window.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#hover-window.visible {
+    opacity: 1;
+}

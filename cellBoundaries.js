@@ -156,16 +156,48 @@ export class CellBoundaries {
             
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             
-            // Create line material
-            const material = new THREE.LineBasicMaterial({
-                color: 0xffffff,
+            // Create visible line material
+            const visibleMaterial = new THREE.LineBasicMaterial({
+                color: 0x0000ff,
                 transparent: true,
                 opacity: opacity
             });
+
+            // Create invisible line material for better hover detection
+            const hitAreaMaterial = new THREE.LineBasicMaterial({
+                visible: false,
+                transparent: true,
+                opacity: 0
+            });
+
+            // Create visible line
+            const visibleLine = new THREE.Line(geometry, visibleMaterial);
             
-            // Create line and add to group
-            const line = new THREE.Line(geometry, material);
-            this.boundariesGroup.add(line);
+            // Create invisible line with wider geometry for hit detection
+            const hitGeometry = new THREE.BufferGeometry();
+            const expandedPositions = new Float32Array(positions.length);
+            
+            // Create slightly offset positions for a wider hit area
+            for (let i = 0; i < positions.length; i += 3) {
+                expandedPositions[i] = positions[i] + 0.0005;
+                expandedPositions[i + 1] = positions[i + 1] + 0.0005;
+                expandedPositions[i + 2] = positions[i + 2];
+            }
+            hitGeometry.setAttribute('position', new THREE.BufferAttribute(expandedPositions, 3));
+            const hitLine = new THREE.Line(hitGeometry, hitAreaMaterial);
+
+            // Add cell type information to both lines
+            const userData = {
+                cellType: 'Neuron',  // This will be replaced with actual cell type data
+                cellSubtype: 'Type ' + (Math.floor(Math.random() * 3) + 1),  // Mock subtype for now
+                cellId: cell.id
+            };
+            visibleLine.userData = userData;
+            hitLine.userData = userData;
+            
+            // Add both lines to the group
+            this.boundariesGroup.add(visibleLine);
+            this.boundariesGroup.add(hitLine);
         });
         
         // Update store with boundaries rendered

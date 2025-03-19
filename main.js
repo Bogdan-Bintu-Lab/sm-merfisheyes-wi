@@ -25,6 +25,14 @@ const dataBounds = {
     maxY: 10000
 };
 
+// Hover window variables
+let hoverWindow = document.getElementById('hover-window');
+let cellTypeElement = document.getElementById('cell-type');
+let cellSubtypeElement = document.getElementById('cell-subtype');
+let cellIdElement = document.getElementById('cell-id');
+let mouse = new THREE.Vector2();
+let raycaster = new THREE.Raycaster();
+
 // Initialize the application
 function init() {
     try {
@@ -96,9 +104,50 @@ function init() {
         store.set('currentGene', 'Gad1');
         
         console.log('MERFISH visualization initialized');
+        
+        // Add mouse move event listener
+        document.addEventListener('mousemove', onDocumentMouseMove);
     } catch (error) {
         console.error('Error initializing visualization:', error);
         alert('There was an error initializing the visualization. Please check the console for details.');
+    }
+}
+
+// Handle mouse move events
+function onDocumentMouseMove(event) {
+    // Calculate mouse position in normalized device coordinates
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    // Update raycaster
+    raycaster.setFromCamera(mouse, camera);
+    
+    // Find intersections with cell boundaries only
+    if (cellBoundaries && cellBoundaries.boundariesGroup) {
+        const intersects = raycaster.intersectObjects(cellBoundaries.boundariesGroup.children, true);
+        
+        if (intersects.length > 0) {
+            // Get the first intersection (closest object)
+            const intersection = intersects[0];
+            
+            // Update hover window position
+            hoverWindow.style.left = event.clientX + 10 + 'px';
+            hoverWindow.style.top = event.clientY - 10 + 'px';
+            
+            // Update cell type information from the intersected object's userData
+            const userData = intersection.object.userData;
+            cellTypeElement.textContent = userData.cellType || 'Unknown';
+            cellSubtypeElement.textContent = userData.cellSubtype || 'Unknown';
+            cellIdElement.textContent = userData.cellId || 'Unknown';
+            
+            // Show the hover window
+            hoverWindow.classList.remove('hidden');
+            hoverWindow.classList.add('visible');
+        } else {
+            // Hide the hover window when not hovering over a boundary
+            hoverWindow.classList.remove('visible');
+            hoverWindow.classList.add('hidden');
+        }
     }
 }
 
