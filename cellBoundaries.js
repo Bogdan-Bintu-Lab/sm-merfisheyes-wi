@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { store } from './store.js';
+import { config } from './config.js';
 
 export class CellBoundaries {
     constructor(scene) {
@@ -13,10 +14,24 @@ export class CellBoundaries {
         this.originalBoundaries = null;
         this.processedBoundaries = null;
         
+        // Create a boundaries group immediately
+        this.boundariesGroup = new THREE.Group();
+        
+        // Set initial visibility based on store value
+        const initialVisibility = store.get('showCellBoundaries');
+        this.boundariesGroup.visible = initialVisibility;
+        console.log('Initial cell boundaries visibility:', initialVisibility);
+        
+        // Add to scene
+        this.scene.add(this.boundariesGroup);
+        
         // Subscribe to store changes
         store.subscribe('showCellBoundaries', (visible) => {
+            console.log('showCellBoundaries changed to:', visible);
             if (this.boundariesGroup) {
                 this.boundariesGroup.visible = visible;
+                // Force a render to update the display
+                store.set('forceRender', !store.get('forceRender'));
             }
         });
         
@@ -41,11 +56,14 @@ export class CellBoundaries {
      * Load cell boundary data from JSON file
      */
     async loadBoundaries() {
+        // Set initial visibility based on store value before loading
+        const shouldShowBoundaries = store.get('showCellBoundaries');
+        console.log('Loading boundaries with visibility:', shouldShowBoundaries);
         try {
             console.log('Loading cell boundaries...');
             
-            // Fetch boundary data
-            const response = await fetch('cell_boundaries/cell_boundaries.json');
+            // Fetch boundary data using the config path
+            const response = await fetch(config.dataPaths.getCellBoundariesPath());
             const boundaryData = await response.json();
             
             // Store original boundaries
@@ -92,21 +110,18 @@ export class CellBoundaries {
      * Create or update the boundary visualization
      */
     createBoundaryVisualization() {
-        // Remove previous boundaries if they exist
-        if (this.boundariesGroup) {
-            this.scene.remove(this.boundariesGroup);
-            this.boundariesGroup.traverse(object => {
-                if (object.geometry) object.geometry.dispose();
-                if (object.material) object.material.dispose();
-            });
+        // Clear previous boundaries if they exist
+        while (this.boundariesGroup.children.length > 0) {
+            const child = this.boundariesGroup.children[0];
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) child.material.dispose();
+            this.boundariesGroup.remove(child);
         }
         
-        // Create new group for boundaries
-        this.boundariesGroup = new THREE.Group();
-        this.scene.add(this.boundariesGroup);
-        
-        // Set visibility based on store
-        this.boundariesGroup.visible = store.get('showCellBoundaries');
+        // Make sure visibility is set correctly
+        const shouldShow = store.get('showCellBoundaries');
+        this.boundariesGroup.visible = shouldShow;
+        console.log('Setting boundary group visibility to:', shouldShow);
         
         // Update boundaries
         this.updateBoundaries();
