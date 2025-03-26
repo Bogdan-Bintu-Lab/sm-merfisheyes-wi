@@ -48,6 +48,9 @@ export class CellBoundaries {
         store.subscribe('boundaryFlipY', () => this.updateBoundaries());
         store.subscribe('boundarySwapXY', () => this.updateBoundaries());
         
+        // Subscribe to inner coloring changes
+        store.subscribe('innerColoring', () => this.updateBoundaries());
+        
         // Load boundaries on initialization
         this.loadBoundaries();
     }
@@ -143,6 +146,7 @@ export class CellBoundaries {
         
         const subsampleFactor = store.get('boundarySubsample');
         const opacity = store.get('boundaryOpacity');
+        const enableInnerColoring = store.get('innerColoring'); // Get checkbox state
         let totalPoints = 0;
         
         // Create line segments and optionally fill polygons
@@ -173,7 +177,7 @@ export class CellBoundaries {
             const lineMaterial = new THREE.LineBasicMaterial({
                 color: 0xffffff,
                 transparent: true,
-                opacity: store.get('boundaryOpacity')
+                opacity: opacity
             });
 
             // Create line and add to group
@@ -181,15 +185,14 @@ export class CellBoundaries {
             this.boundariesGroup.add(line);
 
             // Add inner coloring if enabled
-            if (store.get('innerColoring')) {
-                console.log("Inner coloring enabled");
+            if (enableInnerColoring) {
                 const fillGeometry = new THREE.ShapeGeometry(
                     new THREE.Shape(transformedBoundary.map(p => new THREE.Vector2(p.x, p.y)))
                 );
                 const fillMaterial = new THREE.MeshBasicMaterial({
                     color: 0x00ff00, // Green color
                     transparent: true,
-                    opacity: store.get('boundaryOpacity') * 0.5
+                    opacity: opacity * 0.5
                 });
                 const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
                 this.boundariesGroup.add(fillMesh);
