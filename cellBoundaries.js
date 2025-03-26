@@ -145,7 +145,7 @@ export class CellBoundaries {
         const opacity = store.get('boundaryOpacity');
         let totalPoints = 0;
         
-        // Create line segments for each cell boundary
+        // Create line segments and optionally fill polygons
         this.processedBoundaries.forEach(cell => {
             const boundary = cell.boundary;
             
@@ -159,28 +159,40 @@ export class CellBoundaries {
             // Apply boundary-specific coordinate transformations to each point
             const transformedBoundary = subsampledBoundary.map(point => store.transformBoundaryPoint(point));
             
-            // Create line geometry
-            const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(transformedBoundary.length * 3);
-            
+            // Create geometry for the boundary line
+            const lineGeometry = new THREE.BufferGeometry();
+            const linePositions = new Float32Array(transformedBoundary.length * 3);
             transformedBoundary.forEach((point, i) => {
-                positions[i * 3] = point.x;
-                positions[i * 3 + 1] = point.y;
-                positions[i * 3 + 2] = 0; // Z-coordinate is 0 for 2D visualization
+                linePositions[i * 3] = point.x;
+                linePositions[i * 3 + 1] = point.y;
+                linePositions[i * 3 + 2] = 0;
             });
-            
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            
+            lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+
             // Create line material
-            const material = new THREE.LineBasicMaterial({
+            const lineMaterial = new THREE.LineBasicMaterial({
                 color: 0xffffff,
                 transparent: true,
-                opacity: opacity
+                opacity: store.get('boundaryOpacity')
             });
-            
+
             // Create line and add to group
-            const line = new THREE.Line(geometry, material);
+            const line = new THREE.Line(lineGeometry, lineMaterial);
             this.boundariesGroup.add(line);
+
+            // Add inner coloring if enabled
+            if (store.get('innerColoring')) {
+                console.log("Inner coloring enabled");
+                const fillGeometry = new THREE.ShapeGeometry(
+                    new THREE.Shape(transformedBoundary.map(p => new THREE.Vector2(p.x, p.y)))
+                );
+                const fillMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x00ff00, // Green color
+                    transparent: false,
+                });
+                const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
+                this.boundariesGroup.add(fillMesh);
+            }
         });
         
         // Update store with boundaries rendered

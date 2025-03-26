@@ -15,6 +15,7 @@ export const store = {
         lodThreshold: config.visualization.defaultLodThreshold,
         boundaryOpacity: config.visualization.defaultBoundaryOpacity,
         boundarySubsample: config.visualization.defaultBoundarySubsample,
+        innerColoring: config.visualization.defaultInnerColoring, // New state property
         useIntensityColor: true,
         intensityMin: 0,
         intensityMax: 255,
@@ -158,11 +159,11 @@ export const store = {
             
             // Dataset selector removed from UI, now using config.js
             // Subscribe to dataset changes
-            this.subscribe('currentDataset', () => {
-                // This will trigger reloading of gene list and data
-                window.populateGeneSelector();
-            });
-            
+// this.subscribe('currentDataset', () => {
+                //     // This will trigger reloading of gene list and data
+//     window.populateGeneSelector();
+// });
+             
             // Initialize dataset from config
             this.set('currentDataset', config.dataPaths.currentDataset);
             
@@ -179,6 +180,9 @@ export const store = {
             this.bindCheckbox('boundaryFlipX', 'boundary-flip-x-checkbox');
             this.bindCheckbox('boundaryFlipY', 'boundary-flip-y-checkbox');
             this.bindCheckbox('boundarySwapXY', 'boundary-swap-xy-checkbox');
+            
+            // Bind inner coloring checkbox
+            this.bindCheckbox('innerColoring', 'inner-coloring-checkbox');
             
             // Bind gene selection
             const geneSelect = document.getElementById('gene-select');
