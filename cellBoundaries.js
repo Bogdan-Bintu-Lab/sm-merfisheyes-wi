@@ -188,7 +188,8 @@ export class CellBoundaries {
                 );
                 const fillMaterial = new THREE.MeshBasicMaterial({
                     color: 0x00ff00, // Green color
-                    transparent: false,
+                    transparent: true,
+                    opacity: store.get('boundaryOpacity') * 0.5
                 });
                 const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
                 this.boundariesGroup.add(fillMesh);
