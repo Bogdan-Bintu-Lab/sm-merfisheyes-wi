@@ -10,7 +10,7 @@ export const config = {
         basePath: './data',
         
         // Current dataset to use (options: 'yiqun', 'pei', etc.)
-        currentDataset: 'yinan',
+        currentDataset: 'pei',
         
         // Function to get the full path to a dataset
         getDatasetPath: function() {
@@ -36,7 +36,7 @@ export const config = {
     // Visualization settings
     visualization: {
         defaultPointSize: 2.0,
-        defaultLodThreshold: 5.0,
+        // defaultLodThreshold removed - always showing all points
         defaultBoundaryOpacity: 0.5,
         defaultBoundarySubsample: 10
     }

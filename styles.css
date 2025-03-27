@@ -48,6 +48,62 @@ label {
     margin-bottom: 5px;
 }
 
+.gene-checkbox-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+    margin-bottom: 10px;
+    background-color: white;
+}
+
+.gene-checkbox-item {
+    padding: 3px 5px;
+    display: flex;
+    align-items: center;
+}
+
+.gene-checkbox-item:hover {
+    background-color: #f0f0f0;
+}
+
+.gene-checkbox-item label {
+    margin: 0;
+    padding-left: 5px;
+    cursor: pointer;
+    flex: 1;
+}
+
+.gene-color-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-left: 5px;
+}
+
+#gene-search {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#clear-genes-btn {
+    width: 100%;
+    padding: 5px 10px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#clear-genes-btn:hover {
+    background-color: #e0e0e0;
+}
+
 input[type="range"] {
     width: 80%;
     vertical-align: middle;

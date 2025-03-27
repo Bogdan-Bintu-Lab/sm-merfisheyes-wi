@@ -12,7 +12,7 @@ export const store = {
         // Visualization settings
         cameraDistance: 5000,
         pointSize: config.visualization.defaultPointSize,
-        lodThreshold: config.visualization.defaultLodThreshold,
+        // lodThreshold removed - always showing all points
         boundaryOpacity: config.visualization.defaultBoundaryOpacity,
         boundarySubsample: config.visualization.defaultBoundarySubsample,
         useIntensityColor: true,
@@ -20,9 +20,10 @@ export const store = {
         intensityMax: 255,
         
         // Gene data
-        currentGene: null,
-        geneData: null,
+        selectedGenes: {},  // Object with gene names as keys and boolean values
+        geneData: {},       // Object with gene names as keys and point data as values
         pointsRendered: 0,
+        geneColors: {},     // Object with gene names as keys and color values
         
         // Gene transformations
         geneFlipX: false,
@@ -150,7 +151,7 @@ export const store = {
             console.log('Initializing UI bindings...');
             // Bind inputs with their value displays
             this.bindInputWithLabel('pointSize', 'point-size-input', 'point-size-value');
-            this.bindInputWithLabel('lodThreshold', 'lod-threshold-input', 'lod-threshold-value');
+            // LOD threshold binding removed - always showing all points
             this.bindInputWithLabel('boundaryOpacity', 'boundary-opacity-input', 'boundary-opacity-value');
             this.bindInputWithLabel('boundarySubsample', 'boundary-subsample-input', 'boundary-subsample-value');
             this.bindInputWithLabel('intensityMin', 'intensity-min-input', 'intensity-min-value');
@@ -243,7 +244,7 @@ export const store = {
         const initialValue = this.get(key);
         const defaultValues = {
             'pointSize': 2.0,
-            'lodThreshold': 5.0,
+            // lodThreshold removed - always showing all points
             'boundaryOpacity': 0.5,
             'boundarySubsample': 10,
             'intensityMin': 0,

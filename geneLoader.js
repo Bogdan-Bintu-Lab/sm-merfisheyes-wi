@@ -13,11 +13,11 @@ import { config } from './config.js';
 export class GeneLoader {
     constructor(scene) {
         this.scene = scene;
-        this.genePointsGroup = null;
-        this.loadedGene = null;
-        this.originalPoints = null;
-        this.lodLevels = {};
-        this.currentLODLevel = -1; // Track current LOD level to avoid unnecessary updates
+        this.genePointsGroups = {}; // Object to store point groups for each gene
+        this.loadedGenes = {}; // Track which genes are loaded
+        this.originalPointsData = {}; // Store original points for each gene
+        this.lodLevels = {}; // LOD levels for each gene
+        this.currentLODLevels = {}; // Track current LOD level for each gene
         
         // Initialize transformation state to track changes
         this.transformationState = {
@@ -26,11 +26,20 @@ export class GeneLoader {
             swapXY: false
         };
         
-        // Subscribe to store changes
-        store.subscribe('currentGene', (geneName) => {
-            if (geneName && geneName !== this.loadedGene) {
-                this.loadGeneData(geneName);
-            }
+        // Subscribe to store changes for selected genes
+        store.subscribe('selectedGenes', (selectedGenes) => {
+            if (!selectedGenes) return;
+            
+            // Process each gene selection change
+            Object.entries(selectedGenes).forEach(([geneName, isSelected]) => {
+                if (isSelected && !this.loadedGenes[geneName]) {
+                    // Load newly selected gene
+                    this.loadGeneData(geneName);
+                } else if (!isSelected && this.loadedGenes[geneName]) {
+                    // Remove deselected gene
+                    this.removeGeneData(geneName);
+                }
+            });
         });
         
         store.subscribe('pointSize', () => this.updatePointSize());
@@ -81,6 +90,36 @@ export class GeneLoader {
     }
     
     /**
+     * Remove gene data for a specific gene
+     * @param {string} geneName - Name of the gene to remove
+     */
+    removeGeneData(geneName) {
+        if (!this.loadedGenes[geneName]) return;
+        
+        console.log(`Removing gene data for ${geneName}...`);
+        
+        // Remove the points group from the scene
+        if (this.genePointsGroups[geneName]) {
+            this.scene.remove(this.genePointsGroups[geneName]);
+            this.genePointsGroups[geneName].clear();
+            delete this.genePointsGroups[geneName];
+        }
+        
+        // Clean up other data
+        delete this.loadedGenes[geneName];
+        delete this.originalPointsData[geneName];
+        delete this.lodLevels[geneName];
+        delete this.currentLODLevels[geneName];
+        
+        // Update store data
+        const geneData = store.get('geneData') || {};
+        delete geneData[geneName];
+        store.set('geneData', geneData);
+        
+        console.log(`Removed gene data for ${geneName}`);
+    }
+    
+    /**
      * Load gene data from gzipped CSV file
      * @param {string} geneName - Name of the gene to load
      */
@@ -88,20 +127,20 @@ export class GeneLoader {
         try {
             console.log(`Loading gene data for ${geneName}...`);
             
-            // Track the gene we're currently loading
-            this.loadingGene = geneName;
-            
-            // Clear any previous data
-            this.clearPreviousGeneData();
-            
-            // If the gene name is empty or null, just clear and return
+            // If the gene name is empty or null, just return
             if (!geneName) {
-                console.log('No gene name provided, clearing visualization');
+                console.log('No gene name provided, skipping');
+                return;
+            }
+            
+            // Check if this gene is already loaded
+            if (this.loadedGenes[geneName]) {
+                console.log(`Gene ${geneName} is already loaded, skipping`);
                 return;
             }
         }
         catch (error) {
-            console.error('Error during gene data cleanup:', error);
+            console.error('Error during gene data initialization:', error);
         }
         
         try {
@@ -151,25 +190,30 @@ export class GeneLoader {
                 }
             }
             
-            // Store points
-            this.originalPoints = pointsData;
-            this.loadedGene = geneName;
+            // Store points for this gene
+            this.originalPointsData[geneName] = pointsData;
+            this.loadedGenes[geneName] = true;
             
-            // Update data bounds to center the camera on the data
-            updateDataBounds(pointsData);
+            // Update data bounds to center the camera on all data
+            this.updateDataBoundsForAllGenes();
             
-            // Create LOD levels
-            this.createLODLevels(pointsData);
+            // Create LOD levels for this gene
+            this.createLODLevels(geneName, pointsData);
             
             // Create a new group for this gene's points
-            this.genePointsGroup = new THREE.Group();
-            this.scene.add(this.genePointsGroup);
+            this.genePointsGroups[geneName] = new THREE.Group();
+            this.scene.add(this.genePointsGroups[geneName]);
             
-            // Update store
-            store.set('geneData', pointsData);
+            // Get gene color from store
+            const geneColor = store.get('geneColors')[geneName] || '#ffffff';
             
-            // Initial LOD update
-            this.updateLOD();
+            // Update store with this gene's data
+            const geneData = store.get('geneData') || {};
+            geneData[geneName] = pointsData;
+            store.set('geneData', geneData);
+            
+            // Initial LOD update for this gene
+            this.updateLOD(geneName, geneColor);
             
             console.log(`Loaded ${pointsData.length} points for gene ${geneName}`);
         } catch (error) {
@@ -177,84 +221,54 @@ export class GeneLoader {
             
             // Generate mock data if loading fails
             console.log('Using mock gene data instead');
-            const mockGeneData = generateMockGeneData(10000);
+            const mockGeneData = generateMockGeneData(5000); // Smaller mock data for multiple genes
             
-            // Store mock points
-            this.originalPoints = mockGeneData;
-            this.loadedGene = geneName;
+            // Store mock points for this gene
+            this.originalPointsData[geneName] = mockGeneData;
+            this.loadedGenes[geneName] = true;
             
-            // Update data bounds to center the camera on the data
-            updateDataBounds(mockGeneData);
+            // Update data bounds to center the camera on all data
+            this.updateDataBoundsForAllGenes();
             
-            // Create LOD levels
-            this.createLODLevels(mockGeneData);
+            // Create LOD levels for this gene
+            this.createLODLevels(geneName, mockGeneData);
             
             // Create a new group for this gene's points
-            this.genePointsGroup = new THREE.Group();
-            this.scene.add(this.genePointsGroup);
+            this.genePointsGroups[geneName] = new THREE.Group();
+            this.scene.add(this.genePointsGroups[geneName]);
             
-            // Update store
-            store.set('geneData', mockGeneData);
+            // Get gene color from store
+            const geneColor = store.get('geneColors')[geneName] || '#ffffff';
             
-            // Initial LOD update
-            this.updateLOD();
+            // Update store with this gene's data
+            const geneData = store.get('geneData') || {};
+            geneData[geneName] = mockGeneData;
+            store.set('geneData', geneData);
+            
+            // Initial LOD update for this gene
+            this.updateLOD(geneName, geneColor);
         }
     }
     
     /**
-     * Create different levels of detail for the points
+     * Create different levels of detail for the points of a specific gene
      * Optimized for handling millions of points efficiently
+     * @param {string} geneName - Name of the gene
      * @param {Array} points - Original point data
      */
-    createLODLevels(points) {
-        console.time('createLODLevels');
-        // Reset LOD levels
-        this.lodLevels = {};
+    createLODLevels(geneName, points) {
+        console.time(`createLODLevels-${geneName}`);
         
-        // For extremely large datasets (>1M points), use more aggressive subsampling
-        const isLargeDataset = points.length > 1000000;
-        
-        // Create different LOD levels by subsampling
-        // Level 0: Full resolution (all points)
-        this.lodLevels[0] = points;
-        
-        // For large datasets, create more aggressive LOD levels
-        if (isLargeDataset) {
-            // Level 1: ~25% of points
-            this.lodLevels[1] = this.subsamplePoints(points, 4);
-            
-            // Level 2: ~10% of points
-            this.lodLevels[2] = this.subsamplePoints(points, 10);
-            
-            // Level 3: ~4% of points
-            this.lodLevels[3] = this.subsamplePoints(points, 25);
-            
-            // Level 4: ~1% of points
-            this.lodLevels[4] = this.subsamplePoints(points, 100);
-            
-            // Level 5: ~0.1% of points (for very far away)
-            this.lodLevels[5] = this.subsamplePoints(points, 1000);
-        } else {
-            // Level 1: ~50% of points
-            this.lodLevels[1] = this.subsamplePoints(points, 2);
-            
-            // Level 2: ~25% of points
-            this.lodLevels[2] = this.subsamplePoints(points, 4);
-            
-            // Level 3: ~10% of points
-            this.lodLevels[3] = this.subsamplePoints(points, 10);
-            
-            // Level 4: ~5% of points
-            this.lodLevels[4] = this.subsamplePoints(points, 20);
-            
-            // Level 5: ~1% of points (for very far away)
-            this.lodLevels[5] = this.subsamplePoints(points, 100);
+        // Initialize LOD levels for this gene if not already initialized
+        if (!this.lodLevels[geneName]) {
+            this.lodLevels[geneName] = {};
         }
         
-        console.log('Created LOD levels:', Object.keys(this.lodLevels).map(key => 
-            `Level ${key}: ${this.lodLevels[key].length} points`
-        ).join(', '));
-        console.timeEnd('createLODLevels');
+        // Only create level 0 with all points (no LOD subsampling)
+        this.lodLevels[geneName][0] = points;
+        
+        console.log(`Created points for ${geneName}: ${points.length} points (no LOD subsampling)`);
+        console.timeEnd(`createLODLevels-${geneName}`);
     }
     
     /**
@@ -280,233 +294,359 @@ export class GeneLoader {
     }
     
     /**
-     * Update the level of detail based on camera distance
-     * Optimized for handling millions of points efficiently
+     * Update points for all genes or a specific gene
+     * Always renders all points without LOD subsampling
+     * @param {string} [specificGene] - Optional gene name to update
+     * @param {string} [geneColor] - Optional color for the gene points
      */
-    updateLOD() {
-        // Skip if we don't have the necessary data
-        if (!this.originalPoints || !this.genePointsGroup || !this.lodLevels) {
-            return;
-        }
+    updateLOD(specificGene, geneColor) {
+        // Always use level 0 (full resolution) for all points
+        const lodLevel = 0;
         
-        const cameraDistance = store.get('cameraDistance');
-        const lodThreshold = store.get('lodThreshold');
-        
-        // Determine which LOD level to use based on camera distance and threshold
-        let lodLevel = 0;
-        
-        // When lodThreshold is at maximum (5.0), always use full resolution (level 0)
-        if (lodThreshold < 5.0) {
-            if (cameraDistance > 10000 * lodThreshold) lodLevel = 5;
-            else if (cameraDistance > 5000 * lodThreshold) lodLevel = 4;
-            else if (cameraDistance > 2500 * lodThreshold) lodLevel = 3;
-            else if (cameraDistance > 1000 * lodThreshold) lodLevel = 2;
-            else if (cameraDistance > 500 * lodThreshold) lodLevel = 1;
-        }
-        
-        // Get points for this LOD level
-        const pointsToRender = this.lodLevels[lodLevel];
-        
-        // Safety check - if no points are available for this LOD level, return
-        if (!pointsToRender || pointsToRender.length === 0) {
-            console.warn(`No points available for LOD level ${lodLevel}`);
-            return;
-        }
-        
-        // Check if we need to update the points
-        // Only skip update if LOD level hasn't changed AND transformations haven't changed
+        // Get current transformation states
         const currentFlipX = store.get('geneFlipX');
         const currentFlipY = store.get('geneFlipY');
         const currentSwapXY = store.get('geneSwapXY');
-        
-        const transformationsChanged = 
-            currentFlipX !== this.transformationState.flipX ||
-            currentFlipY !== this.transformationState.flipY ||
-            currentSwapXY !== this.transformationState.swapXY;
-            
-        if (this.currentLODLevel === lodLevel && 
-            this.genePointsGroup.children.length > 0 && 
-            !transformationsChanged) {
-            return; // Skip update if LOD level and transformations haven't changed
-        }
         
         // Update transformation state
         this.transformationState.flipX = currentFlipX;
         this.transformationState.flipY = currentFlipY;
         this.transformationState.swapXY = currentSwapXY;
         
-        // Only log when LOD level actually changes
-        if (this.currentLODLevel !== lodLevel) {
-            console.log(`Updating LOD to level ${lodLevel} with ${pointsToRender.length} points`);
-        }
+        // Determine which genes to update
+        const genesToUpdate = specificGene ? [specificGene] : Object.keys(this.loadedGenes);
+        let totalPointsRendered = 0;
         
-        this.currentLODLevel = lodLevel;
-        
-        // Clear previous points
-        while (this.genePointsGroup.children.length > 0) {
-            const child = this.genePointsGroup.children[0];
-            if (child.geometry) child.geometry.dispose();
-            if (child.material) child.material.dispose();
-            this.genePointsGroup.remove(child);
-        }
-        
-        // Create new points with transformations applied
-        const pointSize = store.get('pointSize');
-        const geometry = new THREE.BufferGeometry();
-        
-        // For large datasets, use typed arrays directly for better performance
-        const positions = new Float32Array(pointsToRender.length * 3);
-        const colors = new Float32Array(pointsToRender.length * 3);
-        
-        // Use direct array access instead of forEach for better performance
-        for (let i = 0; i < pointsToRender.length; i++) {
-            // Apply gene-specific coordinate transformations
-            const point = pointsToRender[i];
-            const transformedPoint = store.transformGenePoint(point);
-            
-            const idx = i * 3;
-            positions[idx] = transformedPoint.x;
-            positions[idx + 1] = transformedPoint.y;
-            positions[idx + 2] = point.z || 0; // Use z-coordinate from data if available
-            
-            // Check if we should use intensity-based coloring
-            const useIntensityColor = store.get('useIntensityColor');
-            
-            if (useIntensityColor && point.intensity !== undefined) {
-                // Get intensity range from store
-                const intensityMin = store.get('intensityMin') || 0;
-                const intensityMax = store.get('intensityMax') || 255;
-                
-                // Normalize intensity to a value between 0 and 1 based on the range
-                const normalizedIntensity = Math.min(1, Math.max(0, 
-                    (point.intensity - intensityMin) / (intensityMax - intensityMin)
-                ));
-                
-                // Create a color gradient from blue (low) to red (high)
-                colors[idx] = normalizedIntensity; // Red increases with intensity
-                colors[idx + 1] = 0; // Green stays at 0
-                colors[idx + 2] = 1 - normalizedIntensity; // Blue decreases with intensity
-            } else {
-                // Use gene color if not using intensity or if intensity not available
-                const color = this.getGeneColorRGB(this.loadedGene);
-                colors[idx] = color.r;
-                colors[idx + 1] = color.g;
-                colors[idx + 2] = color.b;
+        // Update each gene
+        genesToUpdate.forEach(geneName => {
+            // Skip if gene data doesn't exist
+            if (!this.lodLevels[geneName] || !this.loadedGenes[geneName]) {
+                return;
             }
-        }
-        
-        // Set attributes
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-        
-        // Create material
-        const material = new THREE.PointsMaterial({
-            size: pointSize,
-            vertexColors: true,
-            sizeAttenuation: false
+            
+            // Get points for this LOD level
+            const pointsToRender = this.lodLevels[geneName][lodLevel];
+            
+            // Safety check - if no points are available for this LOD level, skip this gene
+            if (!pointsToRender || pointsToRender.length === 0) {
+                console.warn(`No points available for gene ${geneName} at LOD level ${lodLevel}`);
+                return;
+            }
+            
+            // Check if we need to update the points
+            // Only skip update if LOD level hasn't changed AND this isn't a forced update
+            if (this.currentLODLevels[geneName] === lodLevel && 
+                this.genePointsGroups[geneName]?.children.length > 0 && 
+                !specificGene) {
+                // Add the points to the total count even if we're not updating
+                totalPointsRendered += pointsToRender.length;
+                return; // Skip update for this gene
+            }
+            
+            // Update current LOD level for this gene
+            this.currentLODLevels[geneName] = lodLevel;
+            
+            // Get the color for this gene
+            const color = geneColor || store.get('geneColors')[geneName] || '#ffffff';
+            
+            // Log the update
+            console.log(`Updating LOD for gene ${geneName} to level ${lodLevel} with ${pointsToRender.length} points`);
+            
+            // Clear previous points for this gene
+            if (this.genePointsGroups[geneName]) {
+                while (this.genePointsGroups[geneName].children.length > 0) {
+                    const child = this.genePointsGroups[geneName].children[0];
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) child.material.dispose();
+                    this.genePointsGroups[geneName].remove(child);
+                }
+            }
+            
+            // Create new points with transformations applied
+            const pointSize = store.get('pointSize');
+            const geometry = new THREE.BufferGeometry();
+            
+            // For large datasets, use typed arrays directly for better performance
+            const positions = new Float32Array(pointsToRender.length * 3);
+            const colors = new Float32Array(pointsToRender.length * 3);
+            
+            // Use direct array access instead of forEach for better performance
+            for (let i = 0; i < pointsToRender.length; i++) {
+                // Apply gene-specific coordinate transformations
+                const point = pointsToRender[i];
+                const transformedPoint = store.transformGenePoint(point);
+                
+                const idx = i * 3;
+                positions[idx] = transformedPoint.x;
+                positions[idx + 1] = transformedPoint.y;
+                positions[idx + 2] = point.z || 0; // Use z-coordinate from data if available
+                
+                // Check if we should use intensity-based coloring
+                const useIntensityColor = store.get('useIntensityColor');
+                
+                if (useIntensityColor && point.intensity !== undefined) {
+                    // Get intensity range from store
+                    const intensityMin = store.get('intensityMin') || 0;
+                    const intensityMax = store.get('intensityMax') || 255;
+                    
+                    // Normalize intensity to a value between 0 and 1 based on the range
+                    const normalizedIntensity = Math.min(1, Math.max(0, 
+                        (point.intensity - intensityMin) / (intensityMax - intensityMin)
+                    ));
+                    
+                    // Create a color gradient from blue (low) to red (high)
+                    colors[idx] = normalizedIntensity; // Red increases with intensity
+                    colors[idx + 1] = 0; // Green stays at 0
+                    colors[idx + 2] = 1 - normalizedIntensity; // Blue decreases with intensity
+                } else {
+                    // Use gene color if not using intensity or if intensity not available
+                    // Parse the color string to RGB components
+                    const hexColor = color.startsWith('#') ? color.substring(1) : color;
+                    const r = parseInt(hexColor.substring(0, 2), 16) / 255;
+                    const g = parseInt(hexColor.substring(2, 4), 16) / 255;
+                    const b = parseInt(hexColor.substring(4, 6), 16) / 255;
+                    
+                    colors[idx] = r;
+                    colors[idx + 1] = g;
+                    colors[idx + 2] = b;
+                }
+            }
+            
+            // Set attributes
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            // Create material
+            const material = new THREE.PointsMaterial({
+                size: pointSize,
+                vertexColors: true,
+                sizeAttenuation: false
+            });
+            
+            // Create points object
+            const points = new THREE.Points(geometry, material);
+            this.genePointsGroups[geneName].add(points);
+            
+            // Add to total points rendered
+            totalPointsRendered += pointsToRender.length;
         });
         
-        // Create points object
-        const points = new THREE.Points(geometry, material);
-        this.genePointsGroup.add(points);
-        
-        // Update store with points rendered
-        store.set('pointsRendered', pointsToRender.length);
+        // Update store with total points rendered
+        store.set('pointsRendered', totalPointsRendered);
     }
     
     /**
-     * Update point size from store
+     * Update point size for all loaded genes
      */
     updatePointSize() {
-        if (!this.genePointsGroup) return;
-        
         const pointSize = store.get('pointSize');
         
-        // Direct access to children is faster than traverse for simple hierarchies
-        for (let i = 0; i < this.genePointsGroup.children.length; i++) {
-            const object = this.genePointsGroup.children[i];
-            if (object instanceof THREE.Points) {
-                object.material.size = pointSize;
+        // Update point size for all gene groups
+        Object.keys(this.genePointsGroups).forEach(geneName => {
+            const geneGroup = this.genePointsGroups[geneName];
+            if (!geneGroup) return;
+            
+            // Direct access to children is faster than traverse for simple hierarchies
+            for (let i = 0; i < geneGroup.children.length; i++) {
+                const object = geneGroup.children[i];
+                if (object instanceof THREE.Points) {
+                    object.material.size = pointSize;
+                }
             }
-        }
+        });
     }
     
     /**
-     * Clears previous gene data and disposes of resources
-     * Called before loading a new gene to prevent memory leaks
+     * Clears gene data and disposes of resources
+     * @param {string} [geneName] - Optional gene name to clear. If not provided, clears all genes.
      */
-    clearPreviousGeneData() {
-        console.log('Clearing previous gene data');
-        
-        // Remove previous points if they exist
-        if (this.genePointsGroup) {
-            // Remove from scene
-            this.scene.remove(this.genePointsGroup);
+    clearGeneData(geneName) {
+        if (geneName) {
+            console.log(`Clearing data for gene: ${geneName}`);
             
-            // Dispose of all geometries and materials
-            this.genePointsGroup.traverse(object => {
-                if (object.geometry) {
-                    object.geometry.dispose();
-                }
-                if (object.material) {
-                    if (Array.isArray(object.material)) {
-                        object.material.forEach(material => material.dispose());
-                    } else {
-                        object.material.dispose();
+            // Remove points for this gene if they exist
+            if (this.genePointsGroups[geneName]) {
+                // Remove from scene
+                this.scene.remove(this.genePointsGroups[geneName]);
+                
+                // Dispose of all geometries and materials
+                this.genePointsGroups[geneName].traverse(object => {
+                    if (object.geometry) {
+                        object.geometry.dispose();
                     }
+                    if (object.material) {
+                        if (Array.isArray(object.material)) {
+                            object.material.forEach(material => material.dispose());
+                        } else {
+                            object.material.dispose();
+                        }
+                    }
+                });
+                
+                // Delete the reference
+                delete this.genePointsGroups[geneName];
+            }
+            
+            // Clean up data structures for this gene
+            delete this.originalPointsData[geneName];
+            delete this.lodLevels[geneName];
+            delete this.currentLODLevels[geneName];
+            delete this.loadedGenes[geneName];
+            
+            // Update the gene data in the store
+            const geneData = store.get('geneData') || {};
+            delete geneData[geneName];
+            store.set('geneData', geneData);
+            
+            // Recalculate total points rendered
+            this.updateTotalPointsRendered();
+        } else {
+            console.log('Clearing all gene data');
+            
+            // Remove all gene points groups
+            Object.keys(this.genePointsGroups).forEach(gene => {
+                if (this.genePointsGroups[gene]) {
+                    // Remove from scene
+                    this.scene.remove(this.genePointsGroups[gene]);
+                    
+                    // Dispose of all geometries and materials
+                    this.genePointsGroups[gene].traverse(object => {
+                        if (object.geometry) {
+                            object.geometry.dispose();
+                        }
+                        if (object.material) {
+                            if (Array.isArray(object.material)) {
+                                object.material.forEach(material => material.dispose());
+                            } else {
+                                object.material.dispose();
+                            }
+                        }
+                    });
                 }
             });
             
-            // Clear the reference
-            this.genePointsGroup = null;
+            // Reset all data structures
+            this.genePointsGroups = {};
+            this.originalPointsData = {};
+            this.lodLevels = {};
+            this.currentLODLevels = {};
+            this.loadedGenes = {};
+            
+            // Reset transformation state tracking
+            this.transformationState = {
+                flipX: store.get('geneFlipX') || false,
+                flipY: store.get('geneFlipY') || false,
+                swapXY: store.get('geneSwapXY') || false
+            };
+            
+            // Clear gene data in store
+            store.set('geneData', {});
+            
+            // Update the store to reflect that no points are being rendered
+            store.set('pointsRendered', 0);
         }
-        
-        // Reset data structures
-        this.originalPoints = [];
-        this.lodLevels = {};
-        this.currentLODLevel = -1;
-        this.loadedGene = null;
-        
-        // Reset transformation state tracking
-        this.transformationState = {
-            flipX: store.get('geneFlipX') || false,
-            flipY: store.get('geneFlipY') || false,
-            swapXY: store.get('geneSwapXY') || false
-        };
-        
-        // Update the store to reflect that no points are being rendered
-        store.set('pointsRendered', 0);
     }
     
     /**
-     * Get a consistent color for a gene
-     * @param {string} geneName - Name of the gene
-     * @returns {number} - Color as a hex number
+     * Alias for clearGeneData() for backward compatibility
      */
+    clearPreviousGeneData() {
+        this.clearGeneData();
+    }
+    
+    /**
+     * Removes data for a specific gene
+     * @param {string} geneName - Name of the gene to remove
+     */
+    removeGeneData(geneName) {
+        console.log(`Removing gene data for ${geneName}`);
+        
+        // Clear the gene data
+        this.clearGeneData(geneName);
+        
+        // Update the selected genes in the store
+        const selectedGenes = store.get('selectedGenes') || {};
+        if (selectedGenes[geneName]) {
+            selectedGenes[geneName] = false;
+            store.set('selectedGenes', selectedGenes);
+        }
+    }
+    
+    /**
+     * Updates data bounds based on all loaded genes
+     * This ensures the camera is centered on all visible gene data
+     */
+    updateDataBoundsForAllGenes() {
+        // Skip if no genes are loaded
+        if (Object.keys(this.loadedGenes).length === 0) {
+            return;
+        }
+        
+        // Initialize bounds with extreme values
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minY = Infinity;
+        let maxY = -Infinity;
+        
+        // Calculate bounds across all loaded genes
+        Object.keys(this.loadedGenes).forEach(geneName => {
+            if (!this.loadedGenes[geneName] || !this.originalPointsData[geneName]) {
+                return;
+            }
+            
+            const points = this.originalPointsData[geneName];
+            
+            // Find min/max for this gene
+            for (let i = 0; i < points.length; i++) {
+                const point = points[i];
+                minX = Math.min(minX, point.x);
+                maxX = Math.max(maxX, point.x);
+                minY = Math.min(minY, point.y);
+                maxY = Math.max(maxY, point.y);
+            }
+        });
+        
+        // Only update if we found valid bounds
+        if (minX !== Infinity && maxX !== -Infinity && minY !== Infinity && maxY !== -Infinity) {
+            // Update store with new bounds
+            store.set('dataBounds', { minX, maxX, minY, maxY });
+            
+            // Call external function to update camera and controls
+            updateDataBounds();
+        }
+    }
+    
+    /**
+     * Recalculates and updates the total number of points being rendered
+     */
+    updateTotalPointsRendered() {
+        let totalPoints = 0;
+        
+        // Sum up points from all loaded genes
+        Object.keys(this.loadedGenes).forEach(geneName => {
+            if (this.loadedGenes[geneName] && this.currentLODLevels[geneName] !== undefined) {
+                const lodLevel = this.currentLODLevels[geneName];
+                if (this.lodLevels[geneName] && this.lodLevels[geneName][lodLevel]) {
+                    totalPoints += this.lodLevels[geneName][lodLevel].length;
+                }
+            }
+        });
+        
+        // Update store with total points rendered
+        store.set('pointsRendered', totalPoints);
+    }
+    
     /**
      * Get color for a gene
      * @param {string} geneName - Name of the gene
-     * @returns {number} Color as a hex value
+     * @returns {string} Color as a hex string (e.g. '#ff0000')
      */
     getGeneColor(geneName) {
-        // Simple hash function to generate a color from the gene name
-        let hash = 0;
-        for (let i = 0; i < geneName.length; i++) {
-            hash = geneName.charCodeAt(i) + ((hash << 5) - hash);
+        // First check if there's a color defined in the store
+        const geneColors = store.get('geneColors') || {};
+        if (geneColors[geneName]) {
+            return geneColors[geneName];
         }
-        
-        // Convert to hex color
-        let color = Math.abs(hash) % 0xFFFFFF;
-        return color;
-    }
-
-    /**
-     * Get a consistent color for a gene
-     * @param {string} geneName - Name of the gene
-     * @returns {number} - Color as a hex number
-     */
-    getGeneColor(geneName) {
-        // Define the color map properly
         
         // If not, use the hash function to generate a color
         let hash = 0;
@@ -515,21 +655,23 @@ export class GeneLoader {
         }
         
         // Convert to hex color
-        let color = Math.abs(hash) % 0xFFFFFF;
-        return color;
+        const hexColor = Math.abs(hash) % 0xFFFFFF;
+        return `#${hexColor.toString(16).padStart(6, '0')}`;
     }
         
     /**
      * Get RGB color components for a gene
      * @param {string} geneName - Name of the gene
-     * @returns {Object} RGB color components
+     * @returns {Object} RGB color components (values from 0-1)
      */
     getGeneColorRGB(geneName) {
-        const hexColor = this.getGeneColor(geneName);
+        const color = this.getGeneColor(geneName);
+        const hexColor = color.startsWith('#') ? color.substring(1) : color;
+        
         return {
-            r: ((hexColor >> 16) & 255) / 255,
-            g: ((hexColor >> 8) & 255) / 255,
-            b: (hexColor & 255) / 255
+            r: parseInt(hexColor.substring(0, 2), 16) / 255,
+            g: parseInt(hexColor.substring(2, 4), 16) / 255,
+            b: parseInt(hexColor.substring(4, 6), 16) / 255
         };
     }
         

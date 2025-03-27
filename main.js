@@ -144,26 +144,71 @@ function init() {
 }
 
 /**
- * Dynamically populates the gene selector dropdown from the gene_list.json file
+ * Generate a distinct color for a gene
+ * @param {string} geneName - Name of the gene
+ * @param {number} index - Index of the gene in the list
+ * @returns {string} - Hex color code
+ */
+function generateGeneColor(geneName, index) {
+    // Predefined colors for better visibility and distinction
+    const colors = [
+        '#e41a1c', // red
+        '#377eb8', // blue
+        '#4daf4a', // green
+        '#984ea3', // purple
+        '#ff7f00', // orange
+        '#ffff33', // yellow
+        '#a65628', // brown
+        '#f781bf', // pink
+        '#999999', // grey
+        '#66c2a5', // teal
+        '#fc8d62', // salmon
+        '#8da0cb', // light blue
+        '#e78ac3', // light purple
+        '#a6d854', // light green
+        '#ffd92f', // light yellow
+        '#e5c494', // tan
+        '#b3b3b3', // light grey
+        '#8dd3c7', // mint
+        '#bebada', // lavender
+        '#fb8072'  // coral
+    ];
+    
+    // Use index to cycle through colors, or hash the gene name if index is not provided
+    if (index !== undefined) {
+        return colors[index % colors.length];
+    } else {
+        // Simple hash function for the gene name
+        let hash = 0;
+        for (let i = 0; i < geneName.length; i++) {
+            hash = ((hash << 5) - hash) + geneName.charCodeAt(i);
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return colors[Math.abs(hash) % colors.length];
+    }
+}
+
+/**
+ * Dynamically populates the gene selector with checkboxes from the gene_list.json file
  * Exported to window to allow calling from store.js
  */
 window.populateGeneSelector = async function() {
     try {
-        // Get the gene select dropdown
-        const geneSelect = document.getElementById('gene-select');
-        if (!geneSelect) {
+        // Get the gene selector container
+        const geneSelector = document.getElementById('gene-selector');
+        if (!geneSelector) {
             console.error('Gene selector element not found');
             return;
         }
         
         // Check if the selector has already been populated
-        if (geneSelect.options.length > 0 && geneSelect.getAttribute('data-populated') === 'true') {
+        if (geneSelector.getAttribute('data-populated') === 'true') {
             console.log('Gene selector already populated, skipping');
             return;
         }
         
-        // Clear existing options
-        geneSelect.innerHTML = '';
+        // Clear existing content
+        geneSelector.innerHTML = '';
         
         // Fetch the gene list from the JSON file using the config path
         const response = await fetch(config.dataPaths.getGeneListPath());
@@ -177,53 +222,126 @@ window.populateGeneSelector = async function() {
         // Sort genes alphabetically (case insensitive)
         genes.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
         
-        // Add options to the dropdown
-        genes.forEach(gene => {
-            const option = document.createElement('option');
-            option.value = gene;
-            option.textContent = gene;
-            geneSelect.appendChild(option);
+        // Add checkboxes for each gene
+        genes.forEach((gene, index) => {
+            // Create container for the checkbox item
+            const checkboxItem = document.createElement('div');
+            checkboxItem.className = 'gene-checkbox-item';
+            checkboxItem.setAttribute('data-gene', gene);
+            
+            // Create checkbox
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `gene-${gene}`;
+            checkbox.value = gene;
+            checkbox.className = 'gene-checkbox';
+            
+            // Generate a color for this gene
+            const geneColor = generateGeneColor(gene, index);
+            
+            // Store the color in the store
+            if (!store.get('geneColors')[gene]) {
+                const geneColors = store.get('geneColors') || {};
+                geneColors[gene] = geneColor;
+                store.set('geneColors', geneColors);
+            }
+            
+            // Create label
+            const label = document.createElement('label');
+            label.htmlFor = `gene-${gene}`;
+            label.textContent = gene;
+            
+            // Create color indicator
+            const colorIndicator = document.createElement('span');
+            colorIndicator.className = 'gene-color-indicator';
+            colorIndicator.style.backgroundColor = geneColor;
+            
+            // Add event listener to checkbox
+            checkbox.addEventListener('change', () => {
+                const selectedGenes = store.get('selectedGenes') || {};
+                selectedGenes[gene] = checkbox.checked;
+                store.set('selectedGenes', selectedGenes);
+                
+                // Update color indicator visibility
+                colorIndicator.style.display = checkbox.checked ? 'inline-block' : 'none';
+                
+                // If checked, load the gene data
+                if (checkbox.checked) {
+                    console.log(`Selected gene: ${gene}`);
+                } else {
+                    console.log(`Deselected gene: ${gene}`);
+                    // Clear the gene data from the store
+                    const geneData = store.get('geneData') || {};
+                    if (geneData[gene]) {
+                        delete geneData[gene];
+                        store.set('geneData', geneData);
+                    }
+                }
+                
+                // Force a render update
+                store.set('forceRender', !store.get('forceRender'));
+            });
+            
+            // Initially hide color indicator
+            colorIndicator.style.display = 'none';
+            
+            // Assemble the checkbox item
+            checkboxItem.appendChild(checkbox);
+            checkboxItem.appendChild(label);
+            checkboxItem.appendChild(colorIndicator);
+            geneSelector.appendChild(checkboxItem);
         });
         
         console.log(`Populated gene selector with ${genes.length} genes from gene_list.json`);
         
         // Mark the selector as populated
-        geneSelect.setAttribute('data-populated', 'true');
+        geneSelector.setAttribute('data-populated', 'true');
         
-        // Set initial gene based on dropdown selection or default to first option
-        if (geneSelect.options.length > 0) {
-            // Use the first option as default
-            const selectedGene = geneSelect.options[0].value;
-            
-            // Add change event listener if not already added
-            const hasChangeListener = geneSelect.getAttribute('data-has-change-listener') === 'true';
-            if (!hasChangeListener) {
-                geneSelect.addEventListener('change', (event) => {
-                    // Clear any existing gene data first
-                    store.set('geneData', null);
-                    
-                    // Set the new gene
-                    store.set('currentGene', event.target.value);
+        // Set up search functionality
+        const geneSearch = document.getElementById('gene-search');
+        if (geneSearch) {
+            geneSearch.addEventListener('input', (event) => {
+                const searchTerm = event.target.value.toLowerCase();
+                const checkboxItems = geneSelector.querySelectorAll('.gene-checkbox-item');
+                
+                checkboxItems.forEach(item => {
+                    const geneName = item.getAttribute('data-gene').toLowerCase();
+                    if (geneName.includes(searchTerm)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        // Set up clear all button
+        const clearGenesBtn = document.getElementById('clear-genes-btn');
+        if (clearGenesBtn) {
+            clearGenesBtn.addEventListener('click', () => {
+                // Uncheck all checkboxes
+                const checkboxes = geneSelector.querySelectorAll('.gene-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = false;
                 });
                 
-                // Mark the element as having a change listener
-                geneSelect.setAttribute('data-has-change-listener', 'true');
-            }
-            
-            // Only set the initial gene if it's not already set
-            // This prevents duplicate loading during initialization
-            if (!store.get('currentGene')) {
-                console.log(`Setting initial gene to ${selectedGene}`);
+                // Hide all color indicators
+                const colorIndicators = geneSelector.querySelectorAll('.gene-color-indicator');
+                colorIndicators.forEach(indicator => {
+                    indicator.style.display = 'none';
+                });
                 
-                // Clear any existing gene data first
-                store.set('geneData', null);
+                // Clear selected genes in store
+                store.set('selectedGenes', {});
                 
-                // Set the current gene
-                store.set('currentGene', selectedGene);
-            }
-            
-            // Make sure the UI reflects the current gene
-            geneSelect.value = store.get('currentGene') || selectedGene;
+                // Clear gene data in store
+                store.set('geneData', {});
+                
+                // Force a render update
+                store.set('forceRender', !store.get('forceRender'));
+                
+                console.log('Cleared all selected genes');
+            });
         }
     } catch (error) {
         console.error('Error populating gene selector:', error);
