@@ -16,6 +16,7 @@ export const store = {
         boundaryOpacity: config.visualization.defaultBoundaryOpacity,
         boundarySubsample: config.visualization.defaultBoundarySubsample,
         innerColoring: config.visualization.defaultInnerColoring, // New state property
+        innerColoringOpacity: config.visualization.defaultInnerColoringOpacity, // New state property
         useIntensityColor: true,
         intensityMin: 0,
         intensityMax: 255,
@@ -156,6 +157,7 @@ export const store = {
             this.bindInputWithLabel('boundarySubsample', 'boundary-subsample-input', 'boundary-subsample-value');
             this.bindInputWithLabel('intensityMin', 'intensity-min-input', 'intensity-min-value');
             this.bindInputWithLabel('intensityMax', 'intensity-max-input', 'intensity-max-value');
+            this.bindInputWithLabel('innerColoringOpacity', 'inner-coloring-opacity-input', 'inner-coloring-opacity-value');
             
             // Dataset selector removed from UI, now using config.js
             // Subscribe to dataset changes
@@ -251,7 +253,8 @@ export const store = {
             'boundaryOpacity': 0.5,
             'boundarySubsample': 10,
             'intensityMin': 0,
-            'intensityMax': 255
+            'intensityMax': 255,
+            'innerColoringOpacity': 0.5
         };
         
         // Use default value if undefined

@@ -39,6 +39,7 @@ export const config = {
         defaultLodThreshold: 5.0,
         defaultBoundaryOpacity: 0.5,
         defaultBoundarySubsample: 10,
-        defaultInnerColoring: true // New option for inner coloring
+        defaultInnerColoring: true,
+        defaultInnerColoringOpacity: 0.5
     }
 };
