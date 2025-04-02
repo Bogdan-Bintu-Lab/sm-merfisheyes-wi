@@ -173,6 +173,7 @@ export class CellBoundaries {
                 linePositions[i * 3 + 1] = point.y;
                 linePositions[i * 3 + 2] = 0;
             });
+
             lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
 
             // Create line material
@@ -182,7 +183,44 @@ export class CellBoundaries {
                 opacity: opacity
             });
 
-            // Create line and add to group
+
+            // Create invisible line material for better hover detection
+            const hitAreaMaterial = new THREE.LineBasicMaterial({
+                visible: false,
+                transparent: true,
+                opacity: 0
+            });
+
+            // Create visible line
+            const visibleLine = new THREE.Line(geometry, visibleMaterial);
+            
+            // Create invisible line with wider geometry for hit detection
+            const hitGeometry = new THREE.BufferGeometry();
+            const expandedPositions = new Float32Array(positions.length);
+            
+            // Create slightly offset positions for a wider hit area
+            for (let i = 0; i < positions.length; i += 3) {
+                expandedPositions[i] = positions[i] + 0.0005;
+                expandedPositions[i + 1] = positions[i + 1] + 0.0005;
+                expandedPositions[i + 2] = positions[i + 2];
+            }
+            hitGeometry.setAttribute('position', new THREE.BufferAttribute(expandedPositions, 3));
+            const hitLine = new THREE.Line(hitGeometry, hitAreaMaterial);
+
+            // Add cell type information to both lines
+            const userData = {
+                cellType: 'Neuron',  // This will be replaced with actual cell type data
+                cellSubtype: 'Type ' + (Math.floor(Math.random() * 3) + 1),  // Mock subtype for now
+                cellId: cell.id
+            };
+            visibleLine.userData = userData;
+            hitLine.userData = userData;
+            
+            // Add both lines to the group
+            this.boundariesGroup.add(visibleLine);
+            this.boundariesGroup.add(hitLine);
+
+          // Create line and add to group
             const line = new THREE.Line(lineGeometry, lineMaterial);
             this.boundariesGroup.add(line);
 
@@ -199,6 +237,7 @@ export class CellBoundaries {
                 const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
                 this.boundariesGroup.add(fillMesh);
             }
+
         });
         
         // Update store with boundaries rendered
