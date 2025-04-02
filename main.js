@@ -190,6 +190,8 @@ function onDocumentMouseMove(event) {
             hoverWindow.classList.remove('visible');
             hoverWindow.classList.add('hidden');
         }
+    }
+}
 
 /**
  * Dynamically populates the gene selector dropdown from the gene_list.json file
@@ -513,8 +515,7 @@ export function updateDataBounds(points) {
         controls.update();
         
         console.log(`Camera looking at: (${transformedMean.x.toFixed(2)}, ${transformedMean.y.toFixed(2)}, ${meanZ.toFixed(2)})`);
-        */
-    }
+        */    }
 }
 
 // Initialize the application when the DOM is ready

@@ -192,17 +192,17 @@ export class CellBoundaries {
             });
 
             // Create visible line
-            const visibleLine = new THREE.Line(geometry, visibleMaterial);
+            const visibleLine = new THREE.Line(lineGeometry, lineMaterial);
             
             // Create invisible line with wider geometry for hit detection
             const hitGeometry = new THREE.BufferGeometry();
-            const expandedPositions = new Float32Array(positions.length);
+            const expandedPositions = new Float32Array(linePositions.length);
             
             // Create slightly offset positions for a wider hit area
-            for (let i = 0; i < positions.length; i += 3) {
-                expandedPositions[i] = positions[i] + 0.0005;
-                expandedPositions[i + 1] = positions[i + 1] + 0.0005;
-                expandedPositions[i + 2] = positions[i + 2];
+            for (let i = 0; i < linePositions.length; i += 3) {
+                expandedPositions[i] = linePositions[i] + 0.0005;
+                expandedPositions[i + 1] = linePositions[i + 1] + 0.0005;
+                expandedPositions[i + 2] = linePositions[i + 2];
             }
             hitGeometry.setAttribute('position', new THREE.BufferAttribute(expandedPositions, 3));
             const hitLine = new THREE.Line(hitGeometry, hitAreaMaterial);
