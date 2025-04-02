@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { store } from './store.js';
+import { config } from './config.js';
 
 export class CellBoundaries {
     constructor(scene) {
@@ -13,10 +14,24 @@ export class CellBoundaries {
         this.originalBoundaries = null;
         this.processedBoundaries = null;
         
+        // Create a boundaries group immediately
+        this.boundariesGroup = new THREE.Group();
+        
+        // Set initial visibility based on store value
+        const initialVisibility = store.get('showCellBoundaries');
+        this.boundariesGroup.visible = initialVisibility;
+        console.log('Initial cell boundaries visibility:', initialVisibility);
+        
+        // Add to scene
+        this.scene.add(this.boundariesGroup);
+        
         // Subscribe to store changes
         store.subscribe('showCellBoundaries', (visible) => {
+            console.log('showCellBoundaries changed to:', visible);
             if (this.boundariesGroup) {
                 this.boundariesGroup.visible = visible;
+                // Force a render to update the display
+                store.set('forceRender', !store.get('forceRender'));
             }
         });
         
@@ -33,6 +48,10 @@ export class CellBoundaries {
         store.subscribe('boundaryFlipY', () => this.updateBoundaries());
         store.subscribe('boundarySwapXY', () => this.updateBoundaries());
         
+        // Subscribe to inner coloring changes
+        store.subscribe('innerColoring', () => this.updateBoundaries());
+        store.subscribe('innerColoringOpacity', () => this.updateBoundaries());
+        
         // Load boundaries on initialization
         this.loadBoundaries();
     }
@@ -41,11 +60,14 @@ export class CellBoundaries {
      * Load cell boundary data from JSON file
      */
     async loadBoundaries() {
+        // Set initial visibility based on store value before loading
+        const shouldShowBoundaries = store.get('showCellBoundaries');
+        console.log('Loading boundaries with visibility:', shouldShowBoundaries);
         try {
             console.log('Loading cell boundaries...');
             
-            // Fetch boundary data
-            const response = await fetch('cell_boundaries/cell_boundaries.json');
+            // Fetch boundary data using the config path
+            const response = await fetch(config.dataPaths.getCellBoundariesPath());
             const boundaryData = await response.json();
             
             // Store original boundaries
@@ -92,21 +114,18 @@ export class CellBoundaries {
      * Create or update the boundary visualization
      */
     createBoundaryVisualization() {
-        // Remove previous boundaries if they exist
-        if (this.boundariesGroup) {
-            this.scene.remove(this.boundariesGroup);
-            this.boundariesGroup.traverse(object => {
-                if (object.geometry) object.geometry.dispose();
-                if (object.material) object.material.dispose();
-            });
+        // Clear previous boundaries if they exist
+        while (this.boundariesGroup.children.length > 0) {
+            const child = this.boundariesGroup.children[0];
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) child.material.dispose();
+            this.boundariesGroup.remove(child);
         }
         
-        // Create new group for boundaries
-        this.boundariesGroup = new THREE.Group();
-        this.scene.add(this.boundariesGroup);
-        
-        // Set visibility based on store
-        this.boundariesGroup.visible = store.get('showCellBoundaries');
+        // Make sure visibility is set correctly
+        const shouldShow = store.get('showCellBoundaries');
+        this.boundariesGroup.visible = shouldShow;
+        console.log('Setting boundary group visibility to:', shouldShow);
         
         // Update boundaries
         this.updateBoundaries();
@@ -128,9 +147,11 @@ export class CellBoundaries {
         
         const subsampleFactor = store.get('boundarySubsample');
         const opacity = store.get('boundaryOpacity');
+        const enableInnerColoring = store.get('innerColoring'); // Get checkbox state
+        const innerColoringOpacity = store.get('innerColoringOpacity');
         let totalPoints = 0;
         
-        // Create line segments for each cell boundary
+        // Create line segments and optionally fill polygons
         this.processedBoundaries.forEach(cell => {
             const boundary = cell.boundary;
             
@@ -144,24 +165,24 @@ export class CellBoundaries {
             // Apply boundary-specific coordinate transformations to each point
             const transformedBoundary = subsampledBoundary.map(point => store.transformBoundaryPoint(point));
             
-            // Create line geometry
-            const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(transformedBoundary.length * 3);
-            
+            // Create geometry for the boundary line
+            const lineGeometry = new THREE.BufferGeometry();
+            const linePositions = new Float32Array(transformedBoundary.length * 3);
             transformedBoundary.forEach((point, i) => {
-                positions[i * 3] = point.x;
-                positions[i * 3 + 1] = point.y;
-                positions[i * 3 + 2] = 0; // Z-coordinate is 0 for 2D visualization
+                linePositions[i * 3] = point.x;
+                linePositions[i * 3 + 1] = point.y;
+                linePositions[i * 3 + 2] = 0;
             });
-            
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            
-            // Create visible line material
-            const visibleMaterial = new THREE.LineBasicMaterial({
-                color: 0x0000ff,
+
+            lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+
+            // Create line material
+            const lineMaterial = new THREE.LineBasicMaterial({
+                color: 0xffffff,
                 transparent: true,
                 opacity: opacity
             });
+
 
             // Create invisible line material for better hover detection
             const hitAreaMaterial = new THREE.LineBasicMaterial({
@@ -198,6 +219,25 @@ export class CellBoundaries {
             // Add both lines to the group
             this.boundariesGroup.add(visibleLine);
             this.boundariesGroup.add(hitLine);
+
+          // Create line and add to group
+            const line = new THREE.Line(lineGeometry, lineMaterial);
+            this.boundariesGroup.add(line);
+
+            // Add inner coloring if enabled
+            if (enableInnerColoring) {
+                const fillGeometry = new THREE.ShapeGeometry(
+                    new THREE.Shape(transformedBoundary.map(p => new THREE.Vector2(p.x, p.y)))
+                );
+                const fillMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x00ff00, // Green color
+                    transparent: true,
+                    opacity: innerColoringOpacity
+                });
+                const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
+                this.boundariesGroup.add(fillMesh);
+            }
+
         });
         
         // Update store with boundaries rendered

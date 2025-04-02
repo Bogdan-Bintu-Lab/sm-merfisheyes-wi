@@ -53,3 +53,7 @@ yarn-error.log*
 
 # Vite
 .vite/
+
+yinan/
+.venv/
+data/
