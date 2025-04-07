@@ -6,6 +6,8 @@
 import * as THREE from 'three';
 import { store } from './store.js';
 import { config } from './config.js';
+import palette from './data/pei/palette.json' assert { type: 'json' };
+import clusterList from './data/pei/cluster_list.json' assert { type: 'json' };
 
 export class CellBoundaries {
     constructor(scene) {
@@ -152,9 +154,10 @@ export class CellBoundaries {
         let totalPoints = 0;
         
         // Create line segments and optionally fill polygons
-        this.processedBoundaries.forEach(cell => {
+        this.processedBoundaries.forEach((cell, index) => {
             const boundary = cell.boundary;
-            
+            const cluster = clusterList[index];
+            const clusterColor = palette[cluster];
             // Skip if no boundary points
             if (!boundary || !boundary.length) return;
             
@@ -209,8 +212,7 @@ export class CellBoundaries {
 
             // Add cell type information to both lines
             const userData = {
-                cellType: 'Neuron',  // This will be replaced with actual cell type data
-                cellSubtype: 'Type ' + (Math.floor(Math.random() * 3) + 1),  // Mock subtype for now
+                cellType: cluster,  // This will be replaced with actual cell type data
                 cellId: cell.id
             };
             visibleLine.userData = userData;
@@ -230,7 +232,7 @@ export class CellBoundaries {
                     new THREE.Shape(transformedBoundary.map(p => new THREE.Vector2(p.x, p.y)))
                 );
                 const fillMaterial = new THREE.MeshBasicMaterial({
-                    color: 0x00ff00, // Green color
+                    color: clusterColor, // Green color
                     transparent: true,
                     opacity: innerColoringOpacity
                 });
