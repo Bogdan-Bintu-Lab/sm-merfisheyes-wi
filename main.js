@@ -28,11 +28,10 @@ const dataBounds = {
     maxY: 10000
 };
 
-// Hover window variables
-let hoverWindow = document.getElementById('hover-window');
-let cellTypeElement = document.getElementById('cell-type');
-let cellSubtypeElement = document.getElementById('cell-subtype');
-let cellIdElement = document.getElementById('cell-id');
+// Add tooltip container reference
+let tooltipContainer = document.getElementById('tooltip-container');
+
+// Mouse variables
 let mouse = new THREE.Vector2();
 let raycaster = new THREE.Raycaster();
 
@@ -169,26 +168,53 @@ function onDocumentMouseMove(event) {
         const intersects = raycaster.intersectObjects(cellBoundaries.boundariesGroup.children, true);
         
         if (intersects.length > 0) {
-            // Get the first intersection (closest object)
-            const intersection = intersects[0];
+            const userData = intersects[0].object.userData;
             
-            // Update hover window position
-            hoverWindow.style.left = event.clientX + 10 + 'px';
-            hoverWindow.style.top = event.clientY - 10 + 'px';
+            // Create tooltip if it doesn't exist
+            let tooltip = tooltipContainer.querySelector('.tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.className = 'tooltip';
+                tooltipContainer.appendChild(tooltip);
+            }
             
-            // Update cell type information from the intersected object's userData
-            const userData = intersection.object.userData;
-            cellTypeElement.textContent = userData.cellType || 'Unknown';
-            cellSubtypeElement.textContent = userData.cellSubtype || 'Unknown';
-            cellIdElement.textContent = userData.cellId || 'Unknown';
+            // Update tooltip content
+            tooltip.innerHTML = `
+                <div class="tooltip-content">
+                    <h3>Cell Information</h3>
+                    <p>Cell Type: <span>${userData.cellType || 'Unknown'}</span></p>
+                    <p>Cell Subtype: <span>${userData.cellSubtype || 'Unknown'}</span></p>
+                    <p>Cell ID: <span>${userData.cellId || 'Unknown'}</span></p>
+                </div>
+            `;
             
-            // Show the hover window
-            hoverWindow.classList.remove('hidden');
-            hoverWindow.classList.add('visible');
+            // Position tooltip near mouse cursor
+            const tooltipWidth = tooltip.offsetWidth;
+            const tooltipHeight = tooltip.offsetHeight;
+            const x = event.clientX + 15;
+            const y = event.clientY - tooltipHeight - 15;
+            
+            // Adjust position if tooltip would go off screen
+            if (x + tooltipWidth > window.innerWidth) {
+                tooltip.style.left = (x - tooltipWidth - 30) + 'px';
+            } else {
+                tooltip.style.left = x + 'px';
+            }
+            
+            if (y < 0) {
+                tooltip.style.top = (event.clientY + 15) + 'px';
+            } else {
+                tooltip.style.top = y + 'px';
+            }
+            
+            // Show tooltip
+            tooltip.classList.add('visible');
         } else {
-            // Hide the hover window when not hovering over a boundary
-            hoverWindow.classList.remove('visible');
-            hoverWindow.classList.add('hidden');
+            // Hide tooltip
+            const tooltip = tooltipContainer.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.classList.remove('visible');
+            }
         }
     }
 }
