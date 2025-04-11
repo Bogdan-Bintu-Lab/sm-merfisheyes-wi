@@ -36,7 +36,7 @@ export const config = {
     // Visualization settings
     visualization: {
         defaultPointSize: 2.0,
-        defaultLodThreshold: 5.0,
+        // defaultLodThreshold removed - always showing all points
         defaultBoundaryOpacity: 0.5,
         defaultBoundarySubsample: 10,
         defaultInnerColoring: true,
