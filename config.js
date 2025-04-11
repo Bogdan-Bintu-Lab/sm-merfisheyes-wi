@@ -10,7 +10,7 @@ export const config = {
         basePath: './data',
         
         // Current dataset to use (options: 'yiqun', 'pei', etc.)
-        currentDataset: 'yinan',
+        currentDataset: 'pei',
         
         // Function to get the full path to a dataset
         getDatasetPath: function() {
@@ -38,6 +38,8 @@ export const config = {
         defaultPointSize: 2.0,
         defaultLodThreshold: 5.0,
         defaultBoundaryOpacity: 0.5,
-        defaultBoundarySubsample: 10
+        defaultBoundarySubsample: 10,
+        defaultInnerColoring: true,
+        defaultInnerColoringOpacity: 0.5
     }
 };

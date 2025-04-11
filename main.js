@@ -28,8 +28,16 @@ const dataBounds = {
     maxY: 10000
 };
 
+// Add tooltip container reference
+let tooltipContainer = document.getElementById('tooltip-container');
+
+// Mouse variables
+let mouse = new THREE.Vector2();
+let raycaster = new THREE.Raycaster();
+
 // Make sure the store has access to data bounds for transformations
 store.set('dataBounds', dataBounds);
+
 
 // Initialize the application
 function init() {
@@ -137,9 +145,77 @@ function init() {
         animate();
         
         console.log('MERFISH visualization initialized');
+        
+        // Add mouse move event listener
+        document.addEventListener('mousemove', onDocumentMouseMove);
     } catch (error) {
         console.error('Error initializing visualization:', error);
         alert('There was an error initializing the visualization. Please check the console for details.');
+    }
+}
+
+// Handle mouse move events
+function onDocumentMouseMove(event) {
+    // Calculate mouse position in normalized device coordinates
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    // Update raycaster
+    raycaster.setFromCamera(mouse, camera);
+    
+    // Find intersections with cell boundaries only
+    if (cellBoundaries && cellBoundaries.boundariesGroup) {
+        const intersects = raycaster.intersectObjects(cellBoundaries.boundariesGroup.children, true);
+        
+        if (intersects.length > 0) {
+            const userData = intersects[0].object.userData;
+            
+            // Create tooltip if it doesn't exist
+            let tooltip = tooltipContainer.querySelector('.tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.className = 'tooltip';
+                tooltipContainer.appendChild(tooltip);
+            }
+            
+            // Update tooltip content
+            tooltip.innerHTML = `
+                <div class="tooltip-content">
+                    <h3>Cell Information</h3>
+                    <p>Cell Type: <span>${userData.cellType || 'Unknown'}</span></p>
+                    <p>Cell Subtype: <span>${userData.cellSubtype || 'Unknown'}</span></p>
+                    <p>Cell ID: <span>${userData.cellId || 'Unknown'}</span></p>
+                </div>
+            `;
+            
+            // Position tooltip near mouse cursor
+            const tooltipWidth = tooltip.offsetWidth;
+            const tooltipHeight = tooltip.offsetHeight;
+            const x = event.clientX + 15;
+            const y = event.clientY - tooltipHeight - 15;
+            
+            // Adjust position if tooltip would go off screen
+            if (x + tooltipWidth > window.innerWidth) {
+                tooltip.style.left = (x - tooltipWidth - 30) + 'px';
+            } else {
+                tooltip.style.left = x + 'px';
+            }
+            
+            if (y < 0) {
+                tooltip.style.top = (event.clientY + 15) + 'px';
+            } else {
+                tooltip.style.top = y + 'px';
+            }
+            
+            // Show tooltip
+            tooltip.classList.add('visible');
+        } else {
+            // Hide tooltip
+            const tooltip = tooltipContainer.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.classList.remove('visible');
+            }
+        }
     }
 }
 
@@ -465,8 +541,7 @@ export function updateDataBounds(points) {
         controls.update();
         
         console.log(`Camera looking at: (${transformedMean.x.toFixed(2)}, ${transformedMean.y.toFixed(2)}, ${meanZ.toFixed(2)})`);
-        */
-    }
+        */    }
 }
 
 // Initialize the application when the DOM is ready

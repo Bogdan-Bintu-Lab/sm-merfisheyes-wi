@@ -6,6 +6,8 @@
 import * as THREE from 'three';
 import { store } from './store.js';
 import { config } from './config.js';
+import palette from './data/pei/palette.json' assert { type: 'json' };
+import clusterList from './data/pei/cluster_list.json' assert { type: 'json' };
 
 export class CellBoundaries {
     constructor(scene) {
@@ -47,6 +49,10 @@ export class CellBoundaries {
         store.subscribe('boundaryFlipX', () => this.updateBoundaries());
         store.subscribe('boundaryFlipY', () => this.updateBoundaries());
         store.subscribe('boundarySwapXY', () => this.updateBoundaries());
+        
+        // Subscribe to inner coloring changes
+        store.subscribe('innerColoring', () => this.updateBoundaries());
+        store.subscribe('innerColoringOpacity', () => this.updateBoundaries());
         
         // Load boundaries on initialization
         this.loadBoundaries();
@@ -143,12 +149,15 @@ export class CellBoundaries {
         
         const subsampleFactor = store.get('boundarySubsample');
         const opacity = store.get('boundaryOpacity');
+        const enableInnerColoring = store.get('innerColoring'); // Get checkbox state
+        const innerColoringOpacity = store.get('innerColoringOpacity');
         let totalPoints = 0;
         
-        // Create line segments for each cell boundary
-        this.processedBoundaries.forEach(cell => {
+        // Create line segments and optionally fill polygons
+        this.processedBoundaries.forEach((cell, index) => {
             const boundary = cell.boundary;
-            
+            const cluster = clusterList[index];
+            const clusterColor = palette[cluster];
             // Skip if no boundary points
             if (!boundary || !boundary.length) return;
             
@@ -159,28 +168,78 @@ export class CellBoundaries {
             // Apply boundary-specific coordinate transformations to each point
             const transformedBoundary = subsampledBoundary.map(point => store.transformBoundaryPoint(point));
             
-            // Create line geometry
-            const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(transformedBoundary.length * 3);
-            
+            // Create geometry for the boundary line
+            const lineGeometry = new THREE.BufferGeometry();
+            const linePositions = new Float32Array(transformedBoundary.length * 3);
             transformedBoundary.forEach((point, i) => {
-                positions[i * 3] = point.x;
-                positions[i * 3 + 1] = point.y;
-                positions[i * 3 + 2] = 0; // Z-coordinate is 0 for 2D visualization
+                linePositions[i * 3] = point.x;
+                linePositions[i * 3 + 1] = point.y;
+                linePositions[i * 3 + 2] = 0;
             });
-            
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            
+
+            lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+
             // Create line material
-            const material = new THREE.LineBasicMaterial({
+            const lineMaterial = new THREE.LineBasicMaterial({
                 color: 0xffffff,
                 transparent: true,
                 opacity: opacity
             });
+
+
+            // Create invisible line material for better hover detection
+            const hitAreaMaterial = new THREE.LineBasicMaterial({
+                visible: false,
+                transparent: true,
+                opacity: 0
+            });
+
+            // Create visible line
+            const visibleLine = new THREE.Line(lineGeometry, lineMaterial);
             
-            // Create line and add to group
-            const line = new THREE.Line(geometry, material);
+            // Create invisible line with wider geometry for hit detection
+            const hitGeometry = new THREE.BufferGeometry();
+            const expandedPositions = new Float32Array(linePositions.length);
+            
+            // Create slightly offset positions for a wider hit area
+            for (let i = 0; i < linePositions.length; i += 3) {
+                expandedPositions[i] = linePositions[i] + 0.0005;
+                expandedPositions[i + 1] = linePositions[i + 1] + 0.0005;
+                expandedPositions[i + 2] = linePositions[i + 2];
+            }
+            hitGeometry.setAttribute('position', new THREE.BufferAttribute(expandedPositions, 3));
+            const hitLine = new THREE.Line(hitGeometry, hitAreaMaterial);
+
+            // Add cell type information to both lines
+            const userData = {
+                cellType: cluster,  // This will be replaced with actual cell type data
+                cellId: cell.id
+            };
+            visibleLine.userData = userData;
+            hitLine.userData = userData;
+            
+            // Add both lines to the group
+            this.boundariesGroup.add(visibleLine);
+            this.boundariesGroup.add(hitLine);
+
+          // Create line and add to group
+            const line = new THREE.Line(lineGeometry, lineMaterial);
             this.boundariesGroup.add(line);
+
+            // Add inner coloring if enabled
+            if (enableInnerColoring) {
+                const fillGeometry = new THREE.ShapeGeometry(
+                    new THREE.Shape(transformedBoundary.map(p => new THREE.Vector2(p.x, p.y)))
+                );
+                const fillMaterial = new THREE.MeshBasicMaterial({
+                    color: clusterColor, // Green color
+                    transparent: true,
+                    opacity: innerColoringOpacity
+                });
+                const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
+                this.boundariesGroup.add(fillMesh);
+            }
+
         });
         
         // Update store with boundaries rendered

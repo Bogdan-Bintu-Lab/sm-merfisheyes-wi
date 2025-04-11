@@ -15,6 +15,8 @@ export const store = {
         lodThreshold: config.visualization.defaultLodThreshold,
         boundaryOpacity: config.visualization.defaultBoundaryOpacity,
         boundarySubsample: config.visualization.defaultBoundarySubsample,
+        innerColoring: config.visualization.defaultInnerColoring, // New state property
+        innerColoringOpacity: config.visualization.defaultInnerColoringOpacity, // New state property
         useIntensityColor: true,
         intensityMin: 0,
         intensityMax: 255,
@@ -155,14 +157,15 @@ export const store = {
             this.bindInputWithLabel('boundarySubsample', 'boundary-subsample-input', 'boundary-subsample-value');
             this.bindInputWithLabel('intensityMin', 'intensity-min-input', 'intensity-min-value');
             this.bindInputWithLabel('intensityMax', 'intensity-max-input', 'intensity-max-value');
+            this.bindInputWithLabel('innerColoringOpacity', 'inner-coloring-opacity-input', 'inner-coloring-opacity-value');
             
             // Dataset selector removed from UI, now using config.js
             // Subscribe to dataset changes
-            this.subscribe('currentDataset', () => {
-                // This will trigger reloading of gene list and data
-                window.populateGeneSelector();
-            });
-            
+// this.subscribe('currentDataset', () => {
+                //     // This will trigger reloading of gene list and data
+//     window.populateGeneSelector();
+// });
+             
             // Initialize dataset from config
             this.set('currentDataset', config.dataPaths.currentDataset);
             
@@ -179,6 +182,9 @@ export const store = {
             this.bindCheckbox('boundaryFlipX', 'boundary-flip-x-checkbox');
             this.bindCheckbox('boundaryFlipY', 'boundary-flip-y-checkbox');
             this.bindCheckbox('boundarySwapXY', 'boundary-swap-xy-checkbox');
+            
+            // Bind inner coloring checkbox
+            this.bindCheckbox('innerColoring', 'inner-coloring-checkbox');
             
             // Bind gene selection
             const geneSelect = document.getElementById('gene-select');
@@ -247,7 +253,8 @@ export const store = {
             'boundaryOpacity': 0.5,
             'boundarySubsample': 10,
             'intensityMin': 0,
-            'intensityMax': 255
+            'intensityMax': 255,
+            'innerColoringOpacity': 0.5
         };
         
         // Use default value if undefined

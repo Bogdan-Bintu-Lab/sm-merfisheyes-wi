@@ -80,3 +80,74 @@ select, button {
 canvas {
     display: block;
 }
+
+/* Hover window styles */
+#hover-window {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+    transition: opacity 0.2s ease;
+}
+
+.hover-content {
+    max-width: 200px;
+}
+
+#hover-window.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#hover-window.visible {
+    opacity: 1;
+}
+
+/* Tooltip styles */
+#tooltip-container {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.tooltip {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+    position: absolute;
+    pointer-events: none;
+    max-width: 200px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.tooltip.visible {
+    opacity: 1;
+}
+
+.tooltip-content {
+    margin: 0;
+    padding: 0;
+}
+
+.tooltip h3 {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+}
+.tooltip p {
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+}
+
+.tooltip span {
+    font-weight: bold;
+}

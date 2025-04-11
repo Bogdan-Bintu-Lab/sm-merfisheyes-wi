@@ -1,7 +1,8 @@
 import os
+import json
 
 # Path to the directory
-directory = '/Users/kresnajenie/Programming/sm-merfisheyes-wi/genes_csv_gz_yinan'
+directory = 'C:\\Users\\Justin\\Documents\\fish_eyes\\sm-merfisheyes-wi\\data\\pei\\genes_csv_gz'
 
 # Get all filenames in the directory
 filenames = os.listdir(directory)
@@ -13,7 +14,8 @@ base_names = [filename.split('.')[0] for filename in filenames]
 for name in base_names:
     print(name)
 
-# Alternatively, if you want to save these names to a file:
-# with open('gene_names.txt', 'w') as f:
-#     for name in base_names:
-#         f.write(name + '\n')
+
+with open('gene_list.json', 'w') as f:
+    json.dump(base_names, f, indent=2)
+
+print(f"Gene list saved to gene_list.json")
