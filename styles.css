@@ -192,6 +192,7 @@ canvas {
 .tooltip-content {
     margin: 0;
     padding: 0;
+    min-width: 300px;
 }
 
 .tooltip h3 {

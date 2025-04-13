@@ -181,10 +181,7 @@ function onDocumentMouseMove(event) {
             // Update tooltip content
             tooltip.innerHTML = `
                 <div class="tooltip-content">
-                    <h3>Cell Information</h3>
-                    <p>Cell Type: <span>${userData.cellType || 'Unknown'}</span></p>
-                    <p>Cell Subtype: <span>${userData.cellSubtype || 'Unknown'}</span></p>
-                    <p>Cell ID: <span>${userData.cellId || 'Unknown'}</span></p>
+                    <p>${userData.cellType || 'Unknown'} -- ${userData.cellSubtype || 'Unknown'} -- ${userData.cellId || 'Unknown'}</p>
                 </div>
             `;
             
