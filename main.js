@@ -182,7 +182,6 @@ function onDocumentMouseMove(event) {
         
         
         if (intersects.length > 0) {
-            console.log(intersects);
             // sometimes there are two objects for the same cell point - no idea why.
             const intersectedObject = intersects[intersects.length-1].object;
             const userData = intersectedObject.userData;
@@ -238,7 +237,6 @@ function onDocumentMouseMove(event) {
                     tooltipElement.classList.add('visible');
                 }
             }, 50);
-            console.log('Tooltip shown');
         } else {
             // Hide tooltip with delay
             if (tooltipElement) {
