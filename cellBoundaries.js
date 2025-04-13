@@ -28,22 +28,9 @@ export class CellBoundaries {
         this.scene.add(this.boundariesGroup);
         
         // Subscribe to store changes
-        store.subscribe('showCellBoundaries', (visible) => {
-            console.log('showCellBoundaries changed to:', visible);
-            if (this.boundariesGroup) {
-                this.boundariesGroup.visible = visible;
-                // Force a render to update the display
-                store.set('forceRender', !store.get('forceRender'));
-            }
-        });
-        
-        store.subscribe('boundaryOpacity', (opacity) => {
-            this.updateBoundaryOpacity(opacity);
-        });
-        
-        store.subscribe('boundarySubsample', () => {
-            this.updateBoundaries();
-        });
+        store.subscribe('showCellBoundaries', () => this.updateBoundaries());
+        store.subscribe('boundaryOpacity', () => this.updateBoundaryOpacity(store.get('boundaryOpacity')));
+        store.subscribe('boundarySubsample', () => this.updateBoundaries());
         
         // Subscribe to cell boundary coordinate transformation changes
         store.subscribe('boundaryFlipX', () => this.updateBoundaries());
@@ -107,7 +94,8 @@ export class CellBoundaries {
         return boundaryData.map((cellPoints, index) => {
             return {
                 id: `cell-${index}`,
-                boundary: cellPoints
+                boundary: cellPoints,
+                clusterId: index
             };
         });
     }
@@ -134,6 +122,58 @@ export class CellBoundaries {
     }
     
     /**
+     * Calculate centroid of a polygon
+     * @param {Array} points - Array of points [{x, y}]
+     * @returns {Object} Centroid point {x, y}
+     */
+    calculateCentroid(points) {
+        let centerX = 0;
+        let centerY = 0;
+        
+        // Calculate average of all points
+        points.forEach(point => {
+            centerX += point.x;
+            centerY += point.y;
+        });
+        
+        centerX /= points.length;
+        centerY /= points.length;
+        
+        return { x: centerX, y: centerY };
+    }
+
+    /**
+     * Create a point at the centroid position
+     * @param {Object} centroid - Centroid position {x, y}
+     * @param {string} color - Color for the point
+     * @param {Object} cellData - Cell data for userData
+     * @returns {THREE.Points} Point object
+     */
+    createCentroidPoint(centroid, color, cellData) {
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array([centroid.x, centroid.y, 0]);
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        
+        const material = new THREE.PointsMaterial({
+            color: color,
+            size: 3,
+            transparent: true,
+            opacity: 1.0
+        });
+        
+        const point = new THREE.Points(geometry, material);
+        
+        // Add cell data to userData
+        point.userData = {
+            cellType: cellData.cluster || 'Unknown',
+            cellId: cellData.id,
+            clusterId: cellData.clusterId
+        };
+        
+        return point;
+    }
+
+    /**
      * Update boundaries based on current settings
      */
     updateBoundaries() {
@@ -146,14 +186,12 @@ export class CellBoundaries {
             if (child.material) child.material.dispose();
             this.boundariesGroup.remove(child);
         }
-        
+
         const subsampleFactor = store.get('boundarySubsample');
         const opacity = store.get('boundaryOpacity');
-        const enableInnerColoring = store.get('innerColoring'); // Get checkbox state
+        const innerColoring = store.get('innerColoring');
         const innerColoringOpacity = store.get('innerColoringOpacity');
-        let totalPoints = 0;
-        
-        // Create line segments and optionally fill polygons
+
         this.processedBoundaries.forEach((cell, index) => {
             const boundary = cell.boundary;
             const cluster = clusterList[index];
@@ -161,114 +199,20 @@ export class CellBoundaries {
             // Skip if no boundary points
             if (!boundary || !boundary.length) return;
             
-            // Subsample boundary points
-            const subsampledBoundary = this.subsampleBoundary(boundary, subsampleFactor);
-            totalPoints += subsampledBoundary.length;
+            // Calculate centroid
+            const centroid = this.calculateCentroid(boundary);
             
-            // Apply boundary-specific coordinate transformations to each point
-            const transformedBoundary = subsampledBoundary.map(point => store.transformBoundaryPoint(point));
-            
-            // Create geometry for the boundary line
-            const lineGeometry = new THREE.BufferGeometry();
-            const linePositions = new Float32Array(transformedBoundary.length * 3);
-            transformedBoundary.forEach((point, i) => {
-                linePositions[i * 3] = point.x;
-                linePositions[i * 3 + 1] = point.y;
-                linePositions[i * 3 + 2] = 0;
+            // Create and add centroid point with cell data
+            const point = this.createCentroidPoint(centroid, clusterColor, {
+                cluster: cluster,
+                id: cell.id,
+                clusterId: cell.clusterId
             });
-
-            lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
-
-            // Create line material
-            const lineMaterial = new THREE.LineBasicMaterial({
-                color: 0xffffff,
-                transparent: true,
-                opacity: opacity
-            });
-
-
-            // Create invisible line material for better hover detection
-            const hitAreaMaterial = new THREE.LineBasicMaterial({
-                visible: false,
-                transparent: true,
-                opacity: 0
-            });
-
-            // Create visible line
-            const visibleLine = new THREE.Line(lineGeometry, lineMaterial);
-            
-            // Create invisible line with wider geometry for hit detection
-            const hitGeometry = new THREE.BufferGeometry();
-            const expandedPositions = new Float32Array(linePositions.length);
-            
-            // Create slightly offset positions for a wider hit area
-            for (let i = 0; i < linePositions.length; i += 3) {
-                expandedPositions[i] = linePositions[i] + 0.0005;
-                expandedPositions[i + 1] = linePositions[i + 1] + 0.0005;
-                expandedPositions[i + 2] = linePositions[i + 2];
-            }
-            hitGeometry.setAttribute('position', new THREE.BufferAttribute(expandedPositions, 3));
-            const hitLine = new THREE.Line(hitGeometry, hitAreaMaterial);
-
-            // Add cell type information to both lines
-            const userData = {
-                cellType: cluster,  // This will be replaced with actual cell type data
-                cellId: cell.id
-            };
-            visibleLine.userData = userData;
-            hitLine.userData = userData;
-            
-            // Add both lines to the group
-            this.boundariesGroup.add(visibleLine);
-            this.boundariesGroup.add(hitLine);
-
-          // Create line and add to group
-            const line = new THREE.Line(lineGeometry, lineMaterial);
-            this.boundariesGroup.add(line);
-
-            // Add inner coloring if enabled
-            if (enableInnerColoring) {
-                const fillGeometry = new THREE.ShapeGeometry(
-                    new THREE.Shape(transformedBoundary.map(p => new THREE.Vector2(p.x, p.y)))
-                );
-                const fillMaterial = new THREE.MeshBasicMaterial({
-                    color: clusterColor, // Green color
-                    transparent: true,
-                    opacity: innerColoringOpacity
-                });
-                const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
-                this.boundariesGroup.add(fillMesh);
-            }
-
+            this.boundariesGroup.add(point);
         });
         
         // Update store with boundaries rendered
-        store.set('boundariesRendered', totalPoints);
-    }
-    
-    /**
-     * Subsample boundary points to improve performance
-     * @param {Array} boundary - Array of boundary points
-     * @param {number} factor - Subsample factor (take every nth point)
-     * @returns {Array} Subsampled boundary points
-     */
-    subsampleBoundary(boundary, factor) {
-        // Ensure we always include the first and last points to close the boundary
-        if (factor <= 1) return boundary;
-        
-        const result = [];
-        for (let i = 0; i < boundary.length; i += factor) {
-            result.push(boundary[i]);
-        }
-        
-        // Ensure the boundary is closed by adding the first point again if needed
-        if (result.length > 1 && 
-            (result[0].x !== result[result.length - 1].x || 
-             result[0].y !== result[result.length - 1].y)) {
-            result.push(result[0]);
-        }
-        
-        return result;
+        store.set('boundariesRendered', this.processedBoundaries.length);
     }
     
     /**
@@ -279,7 +223,7 @@ export class CellBoundaries {
         if (!this.boundariesGroup) return;
         
         this.boundariesGroup.traverse(object => {
-            if (object instanceof THREE.Line) {
+            if (object instanceof THREE.Points) {
                 object.material.opacity = opacity;
             }
         });
