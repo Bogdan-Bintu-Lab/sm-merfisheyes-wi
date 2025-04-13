@@ -35,6 +35,10 @@ let tooltipContainer = document.getElementById('tooltip-container');
 let mouse = new THREE.Vector2();
 let raycaster = new THREE.Raycaster();
 
+// Create a single tooltip instance when the page loads
+let tooltipElement = null;
+let tooltipTimeout = null;
+
 // Make sure the store has access to data bounds for transformations
 store.set('dataBounds', dataBounds);
 
@@ -156,61 +160,97 @@ function init() {
 
 // Handle mouse move events
 function onDocumentMouseMove(event) {
-    // Calculate mouse position in normalized device coordinates
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    // Calculate mouse position relative to visualization container
+    const visualization = document.getElementById('visualization');
+    const rect = visualization.getBoundingClientRect();
+    
+    // Get mouse position relative to visualization container
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    // Convert to normalized device coordinates
+    mouse.x = (x / rect.width) * 2 - 1;
+    mouse.y = -(y / rect.height) * 2 + 1;
     
     // Update raycaster
     raycaster.setFromCamera(mouse, camera);
     
-    // Find intersections with cell boundaries only
+    // Find intersections with cell centroid points
     if (cellBoundaries && cellBoundaries.boundariesGroup) {
+        // Get all intersecting points
         const intersects = raycaster.intersectObjects(cellBoundaries.boundariesGroup.children, true);
         
+        
         if (intersects.length > 0) {
-            const userData = intersects[0].object.userData;
+            console.log(intersects);
+            // sometimes there are two objects for the same cell point - no idea why.
+            const intersectedObject = intersects[intersects.length-1].object;
+            const userData = intersectedObject.userData;
             
-            // Create tooltip if it doesn't exist
-            let tooltip = tooltipContainer.querySelector('.tooltip');
-            if (!tooltip) {
-                tooltip = document.createElement('div');
-                tooltip.className = 'tooltip';
-                tooltipContainer.appendChild(tooltip);
+            // Get or create tooltip container
+            const tooltipContainer = document.getElementById('tooltip-container');
+            if (!tooltipContainer) return;
+            
+            // Create tooltip element if it doesn't exist
+            if (!tooltipElement) {
+                tooltipElement = document.createElement('div');
+                tooltipElement.className = 'tooltip';
+                tooltipContainer.appendChild(tooltipElement);
             }
             
-            // Update tooltip content
-            tooltip.innerHTML = `
+            // Update content
+            tooltipElement.innerHTML = `
                 <div class="tooltip-content">
-                    <p>${userData.cellType || 'Unknown'} -- ${userData.cellSubtype || 'Unknown'} -- ${userData.cellId || 'Unknown'}</p>
+                    <p>${userData.cellType || 'Unknown'} -- ${userData.cellId || 'Unknown'}</p>
                 </div>
             `;
             
-            // Position tooltip near mouse cursor
-            const tooltipWidth = tooltip.offsetWidth;
-            const tooltipHeight = tooltip.offsetHeight;
-            const x = event.clientX + 15;
-            const y = event.clientY - tooltipHeight - 15;
+            // Clear any existing timeout
+            if (tooltipTimeout) {
+                clearTimeout(tooltipTimeout);
+            }
+            
+            // Calculate position
+            const containerRect = tooltipContainer.getBoundingClientRect();
+            const x = event.clientX - containerRect.left + 15;
+            const y = event.clientY - containerRect.top - tooltipElement.offsetHeight - 15;
+            
+            // Ensure tooltip stays within bounds
+            const containerWidth = containerRect.width;
+            const containerHeight = containerRect.height;
             
             // Adjust position if tooltip would go off screen
-            if (x + tooltipWidth > window.innerWidth) {
-                tooltip.style.left = (x - tooltipWidth - 30) + 'px';
+            if (x + tooltipElement.offsetWidth > containerWidth) {
+                tooltipElement.style.left = (x - tooltipElement.offsetWidth - 30) + 'px';
             } else {
-                tooltip.style.left = x + 'px';
+                tooltipElement.style.left = x + 'px';
             }
             
             if (y < 0) {
-                tooltip.style.top = (event.clientY + 15) + 'px';
+                tooltipElement.style.top = (event.clientY - containerRect.top + 15) + 'px';
             } else {
-                tooltip.style.top = y + 'px';
+                tooltipElement.style.top = y + 'px';
             }
             
-            // Show tooltip
-            tooltip.classList.add('visible');
+            // Show tooltip after a small delay to prevent flickering
+            tooltipTimeout = setTimeout(() => {
+                if (tooltipElement) {
+                    tooltipElement.classList.add('visible');
+                }
+            }, 50);
+            console.log('Tooltip shown');
         } else {
-            // Hide tooltip
-            const tooltip = tooltipContainer.querySelector('.tooltip');
-            if (tooltip) {
-                tooltip.classList.remove('visible');
+            // Hide tooltip with delay
+            if (tooltipElement) {
+                tooltipElement.classList.remove('visible');
+                
+                // Remove tooltip after it's hidden
+                tooltipTimeout = setTimeout(() => {
+                    if (tooltipElement) {
+                        tooltipElement.remove();
+                        tooltipElement = null;
+                    }
+                }, 300);
             }
         }
     }

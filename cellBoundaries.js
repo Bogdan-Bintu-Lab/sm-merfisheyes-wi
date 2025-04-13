@@ -150,6 +150,13 @@ export class CellBoundaries {
      * @returns {THREE.Points} Point object
      */
     createCentroidPoint(centroid, color, cellData) {
+        // Create a small sphere geometry for raycasting
+        const sphereGeometry = new THREE.SphereGeometry(0.5, 4, 4); // Small sphere with low detail
+        const sphereMaterial = new THREE.MeshBasicMaterial({ visible: false });
+        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        sphere.position.set(centroid.x, centroid.y, 0);
+        
+        // Create the visual point
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array([centroid.x, centroid.y, 0]);
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -169,6 +176,9 @@ export class CellBoundaries {
             cellId: cellData.id,
             clusterId: cellData.clusterId
         };
+        
+        // Add the sphere as a child for raycasting
+        point.add(sphere);
         
         return point;
     }
