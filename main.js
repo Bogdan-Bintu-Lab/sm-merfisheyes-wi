@@ -134,6 +134,9 @@ function init() {
         geneLoader = new GeneLoader(scene);
         cellBoundaries = new CellBoundaries(scene);
         
+        // Initialize cell type selector
+        cellBoundaries.initializeCellTypeSelector();
+        
         // Handle window resize
         window.addEventListener('resize', onWindowResize);
         

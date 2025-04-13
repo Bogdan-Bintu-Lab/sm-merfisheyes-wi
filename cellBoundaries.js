@@ -15,6 +15,7 @@ export class CellBoundaries {
         this.boundariesGroup = null;
         this.originalBoundaries = null;
         this.processedBoundaries = null;
+        this.visibleCellTypes = new Set();
         
         // Create a boundaries group immediately
         this.boundariesGroup = new THREE.Group();
@@ -40,6 +41,9 @@ export class CellBoundaries {
         // Subscribe to inner coloring changes
         store.subscribe('innerColoring', () => this.updateBoundaries());
         store.subscribe('innerColoringOpacity', () => this.updateBoundaries());
+        
+        // Subscribe to cell type filter changes
+        store.subscribe('visibleCellTypes', () => this.updateBoundaries());
         
         // Load boundaries on initialization
         this.loadBoundaries();
@@ -184,6 +188,49 @@ export class CellBoundaries {
     }
 
     /**
+     * Initialize cell type selector UI
+     */
+    initializeCellTypeSelector() {
+        const container = document.getElementById('cell-type-checkboxes');
+        const clusters = new Set(clusterList);
+        
+        // Create checkboxes for each cell type
+        clusters.forEach(cellType => {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = false;
+            checkbox.addEventListener('change', () => this.handleCellTypeChange(cellType, checkbox.checked));
+            
+            const label = document.createElement('label');
+            label.textContent = cellType;
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = 'cell-type-option';
+            wrapper.appendChild(checkbox);
+            wrapper.appendChild(label);
+            container.appendChild(wrapper);
+        });
+
+        // Initialize with empty visible cell types
+        this.visibleCellTypes.clear();
+        store.set('visibleCellTypes', []);
+    }
+
+    /**
+     * Handle cell type checkbox changes
+     * @param {string} cellType - The cell type being toggled
+     * @param {boolean} isChecked - Whether the checkbox is checked
+     */
+    handleCellTypeChange(cellType, isChecked) {
+        if (isChecked) {
+            this.visibleCellTypes.add(cellType);
+        } else {
+            this.visibleCellTypes.delete(cellType);
+        }
+        store.set('visibleCellTypes', Array.from(this.visibleCellTypes));
+    }
+
+    /**
      * Update boundaries based on current settings
      */
     updateBoundaries() {
@@ -201,24 +248,27 @@ export class CellBoundaries {
         const opacity = store.get('boundaryOpacity');
         const innerColoring = store.get('innerColoring');
         const innerColoringOpacity = store.get('innerColoringOpacity');
+        const visibleCellTypes = store.get('visibleCellTypes') || [];
 
         this.processedBoundaries.forEach((cell, index) => {
             const boundary = cell.boundary;
             const cluster = clusterList[index];
             const clusterColor = palette[cluster];
+            
             // Skip if no boundary points
             if (!boundary || !boundary.length) return;
             
-            // Calculate centroid
-            const centroid = this.calculateCentroid(boundary);
-            
-            // Create and add centroid point with cell data
-            const point = this.createCentroidPoint(centroid, clusterColor, {
-                cluster: cluster,
-                id: cell.id,
-                clusterId: cell.clusterId
-            });
-            this.boundariesGroup.add(point);
+            // If no cell types are selected, show all boundaries
+            // Otherwise, only show selected cell types
+            if (visibleCellTypes.length === 0 || visibleCellTypes.includes(cluster)) {
+                const centroid = this.calculateCentroid(boundary);
+                const point = this.createCentroidPoint(centroid, clusterColor, {
+                    cluster: cluster,
+                    id: cell.id,
+                    clusterId: cell.clusterId
+                });
+                this.boundariesGroup.add(point);
+            }
         });
         
         // Update store with boundaries rendered

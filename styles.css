@@ -215,3 +215,49 @@ canvas {
 .tooltip span {
     font-weight: bold;
 }
+
+.cell-type-option {
+    display: flex;
+    align-items: center;
+    margin: 4px 0;
+    gap: 8px;
+}
+
+.cell-type-option input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+
+.cell-type-option label {
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+}
+
+#cell-type-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#cell-type-checkboxes::-webkit-scrollbar {
+    width: 6px;
+}
+
+#cell-type-checkboxes::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#cell-type-checkboxes::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+#cell-type-checkboxes::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
