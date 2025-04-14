@@ -58,23 +58,23 @@ export class GeneLoader {
         store.subscribe('intensityMin', () => this.updateLOD());
         store.subscribe('intensityMax', () => this.updateLOD());
         
-        // Subscribe to gene coordinate transformation changes
-        store.subscribe('geneFlipX', () => {
-            this.transformationState.flipX = store.get('geneFlipX');
+        // Subscribe to coordinate transformation changes
+        store.subscribe('flipX', () => {
+            this.transformationState.flipX = store.get('flipX');
             // Force update by resetting current LOD level
             this.currentLODLevel = -1;
             this.updateLOD();
             console.log('Gene flip X changed, updating visualization');
         });
-        store.subscribe('geneFlipY', () => {
-            this.transformationState.flipY = store.get('geneFlipY');
+        store.subscribe('flipY', () => {
+            this.transformationState.flipY = store.get('flipY');
             // Force update by resetting current LOD level
             this.currentLODLevel = -1;
             this.updateLOD();
             console.log('Gene flip Y changed, updating visualization');
         });
-        store.subscribe('geneSwapXY', () => {
-            this.transformationState.swapXY = store.get('geneSwapXY');
+        store.subscribe('swapXY', () => {
+            this.transformationState.swapXY = store.get('swapXY');
             // Force update by resetting current LOD level
             this.currentLODLevel = -1;
             this.updateLOD();
@@ -83,9 +83,9 @@ export class GeneLoader {
         
         // Initialize transformation state
         this.transformationState = {
-            flipX: store.get('geneFlipX') || false,
-            flipY: store.get('geneFlipY') || false,
-            swapXY: store.get('geneSwapXY') || false
+            flipX: store.get('flipX') || false,
+            flipY: store.get('flipY') || false,
+            swapXY: store.get('swapXY') || false
         };
     }
     
@@ -183,9 +183,22 @@ export class GeneLoader {
                     // const intensity = parseFloat(parts[3]);
                     
                     if (!isNaN(x) && !isNaN(y)) {
-                    // if (!isNaN(x) && !isNaN(y) && !isNaN(z) && !isNaN(intensity)) {
-                        // pointsData.push({ x, y, z, intensity });
-                        pointsData.push({ x, y });
+                        let point = { x, y };
+                        
+                        // Apply current transformations to the point
+                        if (this.transformationState.flipX) {
+                            point.x = -x;
+                        }
+                        if (this.transformationState.flipY) {
+                            point.y = -y;
+                        }
+                        if (this.transformationState.swapXY) {
+                            const temp = point.x;
+                            point.x = point.y;
+                            point.y = temp;
+                        }
+                        
+                        pointsData.push(point);
                     }
                 }
             }
@@ -304,9 +317,9 @@ export class GeneLoader {
         const lodLevel = 0;
         
         // Get current transformation states
-        const currentFlipX = store.get('geneFlipX');
-        const currentFlipY = store.get('geneFlipY');
-        const currentSwapXY = store.get('geneSwapXY');
+        const currentFlipX = store.get('flipX');
+        const currentFlipY = store.get('flipY');
+        const currentSwapXY = store.get('swapXY');
         
         // Update transformation state
         this.transformationState.flipX = currentFlipX;
@@ -534,9 +547,9 @@ export class GeneLoader {
             
             // Reset transformation state tracking
             this.transformationState = {
-                flipX: store.get('geneFlipX') || false,
-                flipY: store.get('geneFlipY') || false,
-                swapXY: store.get('geneSwapXY') || false
+                flipX: store.get('flipX') || false,
+                flipY: store.get('flipY') || false,
+                swapXY: store.get('swapXY') || false
             };
             
             // Clear gene data in store

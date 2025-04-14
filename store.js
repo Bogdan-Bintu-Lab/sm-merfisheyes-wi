@@ -27,15 +27,15 @@ export const store = {
         pointsRendered: 0,
         geneColors: {},     // Object with gene names as keys and color values
         
-        // Gene transformations
-        geneFlipX: false,
-        geneFlipY: false,
-        geneSwapXY: false,
+        //  transformations
+        flipX: false,
+        flipY: false,
+        swapXY: false,
         
-        // Cell boundary transformations
-        boundaryFlipX: false,
-        boundaryFlipY: false,
-        boundarySwapXY: false,
+        // // Cell boundary transformations
+        // boundaryFlipX: false,
+        // boundaryFlipY: false,
+        // boundarySwapXY: false,
 
         // Data bounds for centering
         dataBounds: {
@@ -175,14 +175,10 @@ export const store = {
             this.bindCheckbox('useIntensityColor', 'use-intensity-color-checkbox');
             
             // Gene transformation checkboxes
-            this.bindCheckbox('geneFlipX', 'gene-flip-x-checkbox');
-            this.bindCheckbox('geneFlipY', 'gene-flip-y-checkbox');
-            this.bindCheckbox('geneSwapXY', 'gene-swap-xy-checkbox');
+            this.bindCheckbox('flipX', 'flip-x-checkbox');
+            this.bindCheckbox('flipY', 'flip-y-checkbox');
+            this.bindCheckbox('swapXY', 'swap-xy-checkbox');
             
-            // Cell boundary transformation checkboxes
-            this.bindCheckbox('boundaryFlipX', 'boundary-flip-x-checkbox');
-            this.bindCheckbox('boundaryFlipY', 'boundary-flip-y-checkbox');
-            this.bindCheckbox('boundarySwapXY', 'boundary-swap-xy-checkbox');
             
             // Bind inner coloring checkbox
             this.bindCheckbox('innerColoring', 'inner-coloring-checkbox');
@@ -225,12 +221,9 @@ export const store = {
         console.log('UI Bindings initialized with state:', {
             showCellBoundaries: this.get('showCellBoundaries'),
             useIntensityColor: this.get('useIntensityColor'),
-            geneFlipX: this.get('geneFlipX'),
-            geneFlipY: this.get('geneFlipY'),
-            geneSwapXY: this.get('geneSwapXY'),
-            boundaryFlipX: this.get('boundaryFlipX'),
-            boundaryFlipY: this.get('boundaryFlipY'),
-            boundarySwapXY: this.get('boundarySwapXY')
+            flipX: this.get('flipX'),
+            flipY: this.get('flipY'),
+            swapXY: this.get('swapXY')
         });
     },
     
@@ -354,9 +347,9 @@ export const store = {
      * @returns {Object} Transformed point
      */
     transformGenePoint(point) {
-        const flipX = this.get('geneFlipX');
-        const flipY = this.get('geneFlipY');
-        const swapXY = this.get('geneSwapXY');
+        const flipX = this.get('flipX');
+        const flipY = this.get('flipY');
+        const swapXY = this.get('swapXY');
         
         // Get the data bounds from the store
         const dataBounds = this.get('dataBounds') || {
@@ -403,9 +396,9 @@ export const store = {
      * @returns {Object} Transformed point
      */
     transformBoundaryPoint(point) {
-        const flipX = this.get('boundaryFlipX');
-        const flipY = this.get('boundaryFlipY');
-        const swapXY = this.get('boundarySwapXY');
+        const flipX = this.get('flipX');
+        const flipY = this.get('flipY');
+        const swapXY = this.get('swapXY');
         
         // Get the data bounds from the store
         const dataBounds = this.get('dataBounds') || {

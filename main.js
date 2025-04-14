@@ -141,9 +141,9 @@ function init() {
         window.addEventListener('resize', onWindowResize);
         
         // Subscribe to coordinate transformation changes
-        store.subscribe('geneFlipX', () => updateCameraForTransformations());
-        store.subscribe('geneFlipY', () => updateCameraForTransformations());
-        store.subscribe('geneSwapXY', () => updateCameraForTransformations());
+        store.subscribe('flipX', () => updateCameraForTransformations());
+        store.subscribe('flipY', () => updateCameraForTransformations());
+        store.subscribe('swapXY', () => updateCameraForTransformations());
         
         // Populate gene selector from gene_list.json
         window.populateGeneSelector();

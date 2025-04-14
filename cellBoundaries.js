@@ -34,9 +34,9 @@ export class CellBoundaries {
         store.subscribe('boundarySubsample', () => this.updateBoundaries());
         
         // Subscribe to cell boundary coordinate transformation changes
-        store.subscribe('boundaryFlipX', () => this.updateBoundaries());
-        store.subscribe('boundaryFlipY', () => this.updateBoundaries());
-        store.subscribe('boundarySwapXY', () => this.updateBoundaries());
+        store.subscribe('flipX', () => this.updateBoundaries());
+        store.subscribe('flipY', () => this.updateBoundaries());
+        store.subscribe('swapXY', () => this.updateBoundaries());
         
         // Subscribe to inner coloring changes
         store.subscribe('innerColoring', () => this.updateBoundaries());
