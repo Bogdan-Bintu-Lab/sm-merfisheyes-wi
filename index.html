@@ -13,6 +13,19 @@
         <div id="controls">
             <!-- Dataset selection removed, now using config.js -->
             <div class="control-group">
+                <h3>Cell Type Filter</h3>
+                <div class="control-item">
+                    <input type="text" id="cell-type-search" placeholder="Search cell types...">
+                </div>
+                <div id="cell-type-selector" class="control-item">
+                    <label>Select cell types to display:</label>
+                    <div id="cell-type-checkboxes"></div>
+                </div>
+                <div class="control-item">
+                    <button id="clear-cell-types-btn">Clear All Cell Types</button>
+                </div>
+            </div>
+            <div class="control-group">
                 <h3>Gene Selection</h3>
                 <div class="control-item">
                     <input type="text" id="gene-search" placeholder="Search genes...">
@@ -24,13 +37,7 @@
                     <button id="clear-genes-btn">Clear All Genes</button>
                 </div>
             </div>
-            <div class="control-group">
-                <h3>Cell Type Filter</h3>
-                <div id="cell-type-selector" class="control-item">
-                    <label>Select cell types to display:</label>
-                    <div id="cell-type-checkboxes"></div>
-                </div>
-            </div>
+
             <div class="control-group">
                 <h3>Display Options</h3>
                 <div class="control-item">

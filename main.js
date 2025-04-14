@@ -155,6 +155,47 @@ function init() {
         
         // Add mouse move event listener
         document.addEventListener('mousemove', onDocumentMouseMove);
+        
+        // Set up cell type search functionality
+        const cellTypeSearch = document.getElementById('cell-type-search');
+        if (cellTypeSearch) {
+            cellTypeSearch.addEventListener('input', (event) => {
+                const searchTerm = event.target.value.toLowerCase();
+                const checkboxes = document.querySelectorAll('#cell-type-checkboxes input[type="checkbox"]');
+                
+                checkboxes.forEach(checkbox => {
+                    const label = checkbox.parentElement;
+                    const cellTypeName = label.textContent.toLowerCase().trim();
+                    if (cellTypeName.includes(searchTerm)) {
+                        label.style.display = 'flex';
+                    } else {
+                        label.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        // Set up clear cell types button
+        const clearCellTypesBtn = document.getElementById('clear-cell-types-btn');
+        if (clearCellTypesBtn) {
+            clearCellTypesBtn.addEventListener('click', () => {
+                // Uncheck all checkboxes
+                const checkboxes = document.querySelectorAll('#cell-type-checkboxes input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                store.set('visibleCellTypes', []);
+                cellBoundaries.visibleCellTypes.clear();
+                
+                // Update boundaries based on new visibility settings
+                cellBoundaries.updateBoundaries();
+                
+                // Force a render update
+                store.set('forceRender', !store.get('forceRender'));
+                
+                console.log('Cleared all selected cell types');
+            });
+        }
     } catch (error) {
         console.error('Error initializing visualization:', error);
         alert('There was an error initializing the visualization. Please check the console for details.');
