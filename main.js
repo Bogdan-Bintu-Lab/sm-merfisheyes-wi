@@ -754,10 +754,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Then initialize the visualization
     init();
     
-    const stop = false;
     // Wait for the gene selector to be populated before triggering the default gene
     const waitForGeneSelector = setInterval(() => {
-        if (stop) return;
         const geneSelector = document.getElementById('gene-selector');
         if (geneSelector && geneSelector.getAttribute('data-populated') === 'true') {
             clearInterval(waitForGeneSelector);
@@ -765,12 +763,20 @@ document.addEventListener('DOMContentLoaded', () => {
             // Trigger the default gene checkbox after selector is populated
             const defaultGene = DEFAULT;
             const defaultGeneCheckbox = document.getElementById(`gene-${defaultGene}`);
-            if (defaultGeneCheckbox) {
-                defaultGeneCheckbox.dispatchEvent(new Event('change'));
+            if (defaultGeneCheckbox && defaultGeneCheckbox.checked === false) {
                 defaultGeneCheckbox.checked = true;
-                
+                defaultGeneCheckbox.dispatchEvent(new Event('change'));
+                console.log(`Successfully initialized default gene: ${defaultGene}`);
+            } else {
+                console.error(`Default gene checkbox not found for gene: ${defaultGene}`);
             }
-            stop = true;
+            return; // Exit the interval
         }
     }, 100); // Check every 100ms
+
+    // Add timeout to prevent infinite polling
+    setTimeout(() => {
+        clearInterval(waitForGeneSelector);
+        console.error('Timeout: Failed to initialize default gene after 5 seconds');
+    }, 5000);
 });
