@@ -20,6 +20,8 @@ let geneLoader, cellBoundaries;
 let clock = new THREE.Clock();
 let frameCount = 0; // Frame counter for performance optimizations
 
+const DEFAULT = 'Ace';
+
 // Data bounds for centering
 const dataBounds = {
     minX: 0,
@@ -478,6 +480,7 @@ window.populateGeneSelector = async function() {
                 const checkboxes = geneSelector.querySelectorAll('.gene-checkbox');
                 checkboxes.forEach(checkbox => {
                     checkbox.checked = false;
+                    checkbox.dispatchEvent(new Event('change'));
                 });
                 
                 // Hide all color indicators
@@ -750,4 +753,24 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Then initialize the visualization
     init();
+    
+    const stop = false;
+    // Wait for the gene selector to be populated before triggering the default gene
+    const waitForGeneSelector = setInterval(() => {
+        if (stop) return;
+        const geneSelector = document.getElementById('gene-selector');
+        if (geneSelector && geneSelector.getAttribute('data-populated') === 'true') {
+            clearInterval(waitForGeneSelector);
+            
+            // Trigger the default gene checkbox after selector is populated
+            const defaultGene = DEFAULT;
+            const defaultGeneCheckbox = document.getElementById(`gene-${defaultGene}`);
+            if (defaultGeneCheckbox) {
+                defaultGeneCheckbox.dispatchEvent(new Event('change'));
+                defaultGeneCheckbox.checked = true;
+                
+            }
+            stop = true;
+        }
+    }, 100); // Check every 100ms
 });
