@@ -155,7 +155,7 @@ export class CellBoundaries {
      */
     createCentroidPoint(centroid, color, cellData) {
         // Create a small sphere geometry for raycasting
-        const sphereGeometry = new THREE.SphereGeometry(0.5, 4, 4); // Small sphere with low detail
+        const sphereGeometry = new THREE.SphereGeometry(1, 4, 4); // Small sphere with low detail
         const sphereMaterial = new THREE.MeshBasicMaterial({ visible: false });
         const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
         sphere.position.set(centroid.x, centroid.y, 0);
@@ -167,7 +167,7 @@ export class CellBoundaries {
         
         const material = new THREE.PointsMaterial({
             color: color,
-            size: 3,
+            size: 5,
             transparent: true,
             opacity: 1.0
         });
