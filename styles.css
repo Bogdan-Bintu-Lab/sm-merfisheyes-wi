@@ -327,3 +327,20 @@ canvas {
     align-items: center;
     gap: 8px;
 }
+
+/* Gene color indicators */
+.gene-item {
+    position: relative;
+}
+
+.gene-item .color-indicator {
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #00FF00; /* Default green */
+    border: 1px solid #333;
+}

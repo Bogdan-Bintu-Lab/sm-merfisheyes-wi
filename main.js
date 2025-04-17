@@ -449,6 +449,19 @@ window.populateGeneSelector = async function() {
             geneSelector.appendChild(checkboxItem);
         });
         
+        // Add right-click handling for gene names
+        geneSelector.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+            console.log("right click");
+            
+            // Get the gene name directly from the clicked element
+            const geneName = event.target.closest('.gene-checkbox-item')?.getAttribute('data-gene');
+            console.log(geneName);
+            if (geneName) {
+                handleGeneNameClick(event, geneName);
+            }
+        });
+        
         console.log(`Populated gene selector with ${genes.length} genes from gene_list.json`);
         
         // Mark the selector as populated
@@ -504,6 +517,109 @@ window.populateGeneSelector = async function() {
     } catch (error) {
         console.error('Error populating gene selector:', error);
     }
+}
+
+// Add right-click handling for gene names
+function handleGeneNameClick(event, geneName) {
+    if (event.button === 2) { // Right-click
+        
+        // Generate new settings
+        const newSettings = {
+            customSize: getRandomSize(),
+            customColor: getRandomColor()
+        };
+
+        
+        // Update UI indicators
+        updateGeneColorIndicator(geneName, newSettings.customColor);
+        // Update the points if they exist
+        if (geneLoader && geneLoader.genePointsGroups[geneName]) {
+            // Get the Points object from the group
+            const pointsObject = geneLoader.genePointsGroups[geneName].children[0];
+            if (pointsObject && pointsObject.geometry && pointsObject.material) {
+                // Update point size
+                if (newSettings.customSize) {
+                    store.updateGeneSize(geneName, newSettings.customSize);
+                    pointsObject.material.size = newSettings.customSize;
+                    pointsObject.material.needsUpdate = true;
+                }
+                
+                // Update colors if using vertex colors
+                if (newSettings.customColor && pointsObject.material.vertexColors) {
+                    // Store the new color in geneColors
+                    store.updateGeneColor(geneName, newSettings.customColor);
+                    
+                    // Get the color from store to ensure it's properly formatted
+                    const color = store.get('geneColors')[geneName];
+                    
+                    // Parse the color string to RGB components
+                    const hexColor = color.startsWith('#') ? color.substring(1) : color;
+                    const r = parseInt(hexColor.substring(0, 2), 16) / 255;
+                    const g = parseInt(hexColor.substring(2, 4), 16) / 255;
+                    const b = parseInt(hexColor.substring(4, 6), 16) / 255;
+                    
+                    // Update all vertex colors
+                    const colors = pointsObject.geometry.attributes.color.array;
+                    for (let i = 0; i < colors.length; i += 3) {
+                        colors[i] = r;
+                        colors[i + 1] = g;
+                        colors[i + 2] = b;
+                    }
+                    
+                    // Mark the attribute as needing update
+                    pointsObject.geometry.attributes.color.needsUpdate = true;
+                    pointsObject.geometry.attributes.color.version++;
+
+                }
+                
+                // Force a render update
+                store.set('forceRender', !store.get('forceRender'));
+            }
+        }
+        
+        // Force a render update for the entire scene
+        store.set('forceRender', !store.get('forceRender'));
+    }
+}
+
+// Add UI update function
+function updateGeneColorIndicator(geneName, color) {
+    const geneElement = document.querySelector(`[data-gene="${geneName}"]`);
+    if (geneElement) {
+        const indicator = geneElement.querySelector('.gene-color-indicator');
+        if (indicator) {
+            indicator.style.backgroundColor = color || getRandomColor();
+            indicator.style.display = 'inline-block';
+        }
+    }
+}
+
+// Add UI update function
+function updateGeneSizeIndicator(geneName, size) {
+    const geneElement = document.querySelector(`[data-gene="${geneName}"]`);
+    if (geneElement) {
+        const indicator = geneElement.querySelector('.gene-size-indicator');
+        if (indicator) {
+            indicator.style.width = `${size}px`;
+            indicator.style.height = `${size}px`;
+            indicator.style.display = 'inline-block';
+        }
+    }
+}
+
+// Add helper functions for random values
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+function getRandomSize(baseSize = 4) {
+    // Random size between 70% and 130% of base size
+    return baseSize * (0.7 + Math.random() * 0.6);
 }
 
 // Handle window resize

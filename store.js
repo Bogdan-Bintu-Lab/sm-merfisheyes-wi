@@ -11,7 +11,8 @@ export const store = {
         
         // Visualization settings
         cameraDistance: 5000,
-        pointSize: config.visualization.defaultPointSize,
+        pointSizes: {},  // Object with gene names as keys and point size values
+        defaultPointSize: config.visualization.defaultPointSize,
         // lodThreshold removed - always showing all points
         boundaryOpacity: config.visualization.defaultBoundaryOpacity,
         boundarySubsample: config.visualization.defaultBoundarySubsample,
@@ -25,7 +26,9 @@ export const store = {
         selectedGenes: {},  // Object with gene names as keys and boolean values
         geneData: {},       // Object with gene names as keys and point data as values
         pointsRendered: 0,
-        geneColors: {},     // Object with gene names as keys and color values
+        
+        // Color management
+        geneColors: {},
         
         //  transformations
         flipX: false,
@@ -54,7 +57,10 @@ export const store = {
         
         // Debounce control
         lastGeneChangeTime: 0,
-        geneChangeDebounceMs: 300 // Debounce time in milliseconds
+        geneChangeDebounceMs: 300, // Debounce time in milliseconds
+        
+        // Add gene-specific settings to store
+        geneSettings: {}
     },
     
     // Subscribers
@@ -152,7 +158,7 @@ export const store = {
         try {
             console.log('Initializing UI bindings...');
             // Bind inputs with their value displays
-            this.bindInputWithLabel('pointSize', 'point-size-input', 'point-size-value');
+            this.bindInputWithLabel('defaultPointSize', 'point-size-input', 'point-size-value');
             // LOD threshold binding removed - always showing all points
             this.bindInputWithLabel('boundaryOpacity', 'boundary-opacity-input', 'boundary-opacity-value');
             this.bindInputWithLabel('boundarySubsample', 'boundary-subsample-input', 'boundary-subsample-value');
@@ -242,7 +248,7 @@ export const store = {
         // Get initial value with a fallback
         const initialValue = this.get(key);
         const defaultValues = {
-            'pointSize': 2.0,
+            'defaultPointSize': 2.0,
             // lodThreshold removed - always showing all points
             'boundaryOpacity': 0.5,
             'boundarySubsample': 10,
@@ -339,6 +345,35 @@ export const store = {
         if (element) {
             element.textContent = value;
         }
+    },
+    
+    /**
+     * Update gene color
+     * @param {string} geneName - Name of the gene
+     * @param {string} color - New color value
+     */
+    updateGeneColor(geneName, color) {
+        const geneColors = this.get('geneColors') || {};
+        geneColors[geneName] = color;
+        this.set('geneColors', geneColors);
+        
+        // Force a render update
+        this.set('forceRender', !this.get('forceRender'));
+    },
+
+    /**
+     * Update gene size
+     * @param {string} geneName - Name of the gene
+     * @param {number} size - New size value
+     */
+    updateGeneSize(geneName, size) {
+        const pointSizes = this.get('pointSizes') || {};
+        pointSizes[geneName] = size || 2.0;
+        console.log(pointSizes);
+        this.set('pointSizes', pointSizes);
+        
+        // Force a render update
+        this.set('forceRender', !this.get('forceRender'));
     },
     
     /**

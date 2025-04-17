@@ -219,6 +219,7 @@ export class GeneLoader {
             
             // Get gene color from store
             const geneColor = store.get('geneColors')[geneName] || '#ffffff';
+            const geneSize = store.get('pointSizes')[geneName] || 2.0;
             
             // Update store with this gene's data
             const geneData = store.get('geneData') || {};
@@ -226,7 +227,7 @@ export class GeneLoader {
             store.set('geneData', geneData);
             
             // Initial LOD update for this gene
-            this.updateLOD(geneName, geneColor);
+            this.updateLOD(geneName, geneColor, geneSize);
             
             console.log(`Loaded ${pointsData.length} points for gene ${geneName}`);
         } catch (error) {
@@ -259,7 +260,7 @@ export class GeneLoader {
             store.set('geneData', geneData);
             
             // Initial LOD update for this gene
-            this.updateLOD(geneName, geneColor);
+            this.updateLOD(geneName, geneColor, 2.0);
         }
     }
     
@@ -312,7 +313,7 @@ export class GeneLoader {
      * @param {string} [specificGene] - Optional gene name to update
      * @param {string} [geneColor] - Optional color for the gene points
      */
-    updateLOD(specificGene, geneColor) {
+    updateLOD(specificGene, geneColor, geneSize) {
         // Always use level 0 (full resolution) for all points
         const lodLevel = 0;
         
@@ -431,7 +432,7 @@ export class GeneLoader {
             
             // Create material
             const material = new THREE.PointsMaterial({
-                size: pointSize,
+                size: geneSize,
                 vertexColors: true,
                 sizeAttenuation: false
             });
@@ -452,13 +453,13 @@ export class GeneLoader {
      * Update point size for all loaded genes
      */
     updatePointSize() {
-        const pointSize = store.get('pointSize');
+        
         
         // Update point size for all gene groups
         Object.keys(this.genePointsGroups).forEach(geneName => {
             const geneGroup = this.genePointsGroups[geneName];
             if (!geneGroup) return;
-            
+            const pointSize = store.get('pointSizes')[geneName] || store.get('defaultPointSize');
             // Direct access to children is faster than traverse for simple hierarchies
             for (let i = 0; i < geneGroup.children.length; i++) {
                 const object = geneGroup.children[i];
