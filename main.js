@@ -20,7 +20,7 @@ let geneLoader, cellBoundaries;
 let clock = new THREE.Clock();
 let frameCount = 0; // Frame counter for performance optimizations
 
-const DEFAULT = 'Ace';
+const DEFAULT = 'Cd8a';
 
 // Data bounds for centering
 const dataBounds = {
@@ -243,6 +243,9 @@ function onDocumentMouseMove(event) {
                 tooltipContainer.appendChild(tooltipElement);
             }
             
+            if (!userData.cellType  && !userData.clusterId) {
+                return;
+            }
             // Update content
             tooltipElement.innerHTML = `
                 <div class="tooltip-content">

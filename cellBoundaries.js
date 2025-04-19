@@ -112,7 +112,13 @@ export class CellBoundaries {
         while (this.boundariesGroup.children.length > 0) {
             const child = this.boundariesGroup.children[0];
             if (child.geometry) child.geometry.dispose();
-            if (child.material) child.material.dispose();
+            if (child.material) {
+                if (child.material instanceof Array) {
+                    child.material.forEach(mat => mat.dispose());
+                } else {
+                    child.material.dispose();
+                }
+            }
             this.boundariesGroup.remove(child);
         }
         
@@ -155,7 +161,7 @@ export class CellBoundaries {
      */
     createCentroidPoint(centroid, color, cellData) {
         // Create a small sphere geometry for raycasting
-        const sphereGeometry = new THREE.SphereGeometry(1, 4, 4); // Small sphere with low detail
+        const sphereGeometry = new THREE.SphereGeometry(1.5, 6, 6); // Small sphere with low detail
         const sphereMaterial = new THREE.MeshBasicMaterial({ visible: false });
         const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
         sphere.position.set(centroid.x, centroid.y, 0);
@@ -240,7 +246,13 @@ export class CellBoundaries {
         while (this.boundariesGroup.children.length > 0) {
             const child = this.boundariesGroup.children[0];
             if (child.geometry) child.geometry.dispose();
-            if (child.material) child.material.dispose();
+            if (child.material) {
+                if (child.material instanceof Array) {
+                    child.material.forEach(mat => mat.dispose());
+                } else {
+                    child.material.dispose();
+                }
+            }
             this.boundariesGroup.remove(child);
         }
 
@@ -250,6 +262,9 @@ export class CellBoundaries {
         const innerColoringOpacity = store.get('innerColoringOpacity');
         const visibleCellTypes = store.get('visibleCellTypes') || [];
 
+        // Store reusable line material only
+        let lineMaterial = null;
+
         this.processedBoundaries.forEach((cell, index) => {
             const boundary = cell.boundary;
             const cluster = clusterList[index];
@@ -257,7 +272,61 @@ export class CellBoundaries {
             
             // Skip if no boundary points
             if (!boundary || !boundary.length) return;
+
+            // Apply boundary-specific coordinate transformations to each point
+            const transformedBoundary = boundary.map(point => store.transformBoundaryPoint(point));
             
+            // Create geometry for the boundary line
+            const lineGeometry = new THREE.BufferGeometry();
+            const linePositions = new Float32Array(transformedBoundary.length * 3);
+            transformedBoundary.forEach((point, i) => {
+                linePositions[i * 3] = point.x;
+                linePositions[i * 3 + 1] = point.y;
+                linePositions[i * 3 + 2] = 0;
+            });
+
+            lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+
+            // Reuse line material if possible
+            if (!lineMaterial) {
+                lineMaterial = new THREE.LineBasicMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: opacity
+                });
+            } else {
+                lineMaterial.color.set(0xffffff);
+                lineMaterial.opacity = opacity;
+            }
+
+            // Create visible line
+            const visibleLine = new THREE.Line(lineGeometry, lineMaterial);
+            
+            // Add cell type information
+            const userData = {
+                cellType: cluster,
+                cellId: cell.id
+            };
+            visibleLine.userData = userData;
+            
+            this.boundariesGroup.add(visibleLine);
+
+            // Add inner coloring if enabled (purely cosmetic)
+            if (innerColoring) {
+                const fillGeometry = new THREE.ShapeGeometry(
+                    new THREE.Shape(transformedBoundary.map(p => new THREE.Vector2(p.x, p.y)))
+                );
+                
+                // Create new material for each cell since colors are different
+                const fillMaterial = new THREE.MeshBasicMaterial({
+                    color: clusterColor,
+                    transparent: true,
+                    opacity: innerColoringOpacity
+                });
+                const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
+                this.boundariesGroup.add(fillMesh);
+            }
+
             // If no cell types are selected, show all boundaries
             // Otherwise, only show selected cell types
             if (visibleCellTypes.length === 0 || visibleCellTypes.includes(cluster)) {
@@ -267,6 +336,12 @@ export class CellBoundaries {
                     id: cell.id,
                     clusterId: cell.clusterId
                 });
+                
+                // Make the centroid invisible but still detectable
+                point.material.visible = false;
+                point.material.transparent = true;
+                point.material.opacity = 0;
+                
                 this.boundariesGroup.add(point);
             }
         });
