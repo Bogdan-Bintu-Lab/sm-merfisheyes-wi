@@ -57,11 +57,14 @@ export class CellBoundaries {
         const shouldShowBoundaries = store.get('showCellBoundaries');
         console.log('Loading boundaries with visibility:', shouldShowBoundaries);
         try {
+            document.querySelector('#loading-status').querySelector('p').textContent = 'Loading cell boundaries...';
             console.log('Loading cell boundaries...');
             
             // Fetch boundary data using the config path
+            document.querySelector('#loading-status').querySelector('p').textContent = 'Extracting from JSON...';
             const response = await fetch(config.dataPaths.getCellBoundariesPath());
             const boundaryData = await response.json();
+            document.querySelector('#loading-status').querySelector('p').textContent = 'Extraction Complete. Processing...';
             
             // Store original boundaries
             this.originalBoundaries = boundaryData;
@@ -76,6 +79,7 @@ export class CellBoundaries {
             store.set('cellBoundaries', boundaryData);
             
             console.log(`Loaded cell boundaries with ${this.processedBoundaries.length} cells`);
+            document.querySelector('#loading-status').querySelector('p').textContent = 'Cell boundary loading complete.';
         } catch (error) {
             console.error('Error loading cell boundaries:', error);
             // Use mock data if loading fails
@@ -125,10 +129,12 @@ export class CellBoundaries {
         // Make sure visibility is set correctly
         const shouldShow = store.get('showCellBoundaries');
         this.boundariesGroup.visible = shouldShow;
+        document.querySelector('#loading-status').querySelector('p').textContent = `Setting boundary group visibility to: ${shouldShow}`;
         console.log('Setting boundary group visibility to:', shouldShow);
         
         // Update boundaries
         this.updateBoundaries();
+        document.querySelector('#loading-status').querySelector('p').textContent = `Boundary visibility updated`;
     }
     
     /**
@@ -234,14 +240,15 @@ export class CellBoundaries {
             this.visibleCellTypes.delete(cellType);
         }
         store.set('visibleCellTypes', Array.from(this.visibleCellTypes));
+        document.querySelector('#loading-status').querySelector('p').textContent = `Cell cluster ${cellType} is now ${isChecked ? 'visible' : 'hidden'}`;
     }
-
+    
     /**
      * Update boundaries based on current settings
      */
     updateBoundaries() {
         if (!this.processedBoundaries || !this.boundariesGroup) return;
-        
+        document.querySelector('#loading-status').querySelector('p').textContent = 'Updating cell boundary display...';
         // Clear previous boundaries
         while (this.boundariesGroup.children.length > 0) {
             const child = this.boundariesGroup.children[0];
@@ -272,6 +279,11 @@ export class CellBoundaries {
             
             // Skip if no boundary points
             if (!boundary || !boundary.length) return;
+
+            // Skip cell if it's not in the visible cell types
+            if (visibleCellTypes.length > 0 && !visibleCellTypes.includes(cluster)) {
+                return;
+            }
 
             // Apply boundary-specific coordinate transformations to each point
             const transformedBoundary = boundary.map(point => store.transformBoundaryPoint(point));
@@ -327,23 +339,21 @@ export class CellBoundaries {
                 this.boundariesGroup.add(fillMesh);
             }
 
-            // If no cell types are selected, show all boundaries
-            // Otherwise, only show selected cell types
-            if (visibleCellTypes.length === 0 || visibleCellTypes.includes(cluster)) {
-                const centroid = this.calculateCentroid(boundary);
-                const point = this.createCentroidPoint(centroid, clusterColor, {
-                    cluster: cluster,
-                    id: cell.id,
-                    clusterId: cell.clusterId
-                });
-                
-                // Make the centroid invisible but still detectable
-                point.material.visible = false;
-                point.material.transparent = true;
-                point.material.opacity = 0;
-                
-                this.boundariesGroup.add(point);
-            }
+            // Add centroid point for raycasting
+            const centroid = this.calculateCentroid(boundary);
+            const point = this.createCentroidPoint(centroid, clusterColor, {
+                cluster: cluster,
+                id: cell.id,
+                clusterId: cell.clusterId
+            });
+            
+            // Make the centroid invisible but still detectable
+            point.material.visible = false;
+            point.material.transparent = true;
+            point.material.opacity = 0;
+            
+            this.boundariesGroup.add(point);
+            
         });
         
         // Update store with boundaries rendered

@@ -144,7 +144,7 @@ export class GeneLoader {
         }
         
         try {
-            
+            document.querySelector('#loading-status').querySelector('p').textContent = `Loading gene data... for gene: ${geneName}`;
             console.log(`Loading gene data for ${geneName}...`);
             
             // Fetch gzipped CSV data using the config path
@@ -154,16 +154,18 @@ export class GeneLoader {
             }
             
             // Get the compressed data as an ArrayBuffer
+            document.querySelector('#loading-status').querySelector('p').textContent = `Fetching gene data... for gene: ${geneName}`;
             const compressedData = await response.arrayBuffer();
             // console.log(`Received compressed data, size: ${compressedData.byteLength} bytes`);
             // console.log('First 100 bytes:', new Uint8Array(compressedData).slice(0, 4));
-
+            document.querySelector('#loading-status').querySelector('p').textContent = "Unzipping...";
             const unzippedData = new Uint8Array(compressedData);
             // console.log(`Unzipped data size: ${unzippedData.length} bytes`);
-
+            document.querySelector('#loading-status').querySelector('p').textContent = "Decompressing...";
             const decompressed = new TextDecoder().decode(unzippedData);
             // console.log(`Decompressed text length: ${decompressed.length} characters`);
             // console.log('First 100 characters:', decompressed.substring(0, 100));
+            document.querySelector('#loading-status').querySelector('p').textContent = "Preprocessing complete. Beginning rendering...";
             
             // Parse CSV data
             const lines = decompressed.split('\n');
@@ -228,7 +230,7 @@ export class GeneLoader {
             
             // Initial LOD update for this gene
             this.updateLOD(geneName, geneColor, geneSize);
-            
+            document.querySelector('#loading-status').querySelector('p').textContent = `Render complete: ${geneName}`;
             console.log(`Loaded ${pointsData.length} points for gene ${geneName}`);
         } catch (error) {
             console.error(`Error loading gene data for ${geneName}:`, error);
@@ -476,6 +478,7 @@ export class GeneLoader {
      */
     clearGeneData(geneName) {
         if (geneName) {
+            document.querySelector('#loading-status').querySelector('p').textContent = `Clearing data for gene: ${geneName}...`;
             console.log(`Clearing data for gene: ${geneName}`);
             
             // Remove points for this gene if they exist
@@ -514,9 +517,10 @@ export class GeneLoader {
             
             // Recalculate total points rendered
             this.updateTotalPointsRendered();
+            document.querySelector('#loading-status').querySelector('p').textContent = `Data cleared for gene: ${geneName}`;
         } else {
             console.log('Clearing all gene data');
-            
+            document.querySelector('#loading-status').querySelector('p').textContent = `Clearing all gene data...`;
             // Remove all gene points groups
             Object.keys(this.genePointsGroups).forEach(gene => {
                 if (this.genePointsGroups[gene]) {
@@ -558,6 +562,7 @@ export class GeneLoader {
             
             // Update the store to reflect that no points are being rendered
             store.set('pointsRendered', 0);
+            document.querySelector('#loading-status').querySelector('p').textContent = `Data cleared for all genes`;
         }
     }
     
