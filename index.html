@@ -24,6 +24,14 @@
                     <button id="clear-genes-btn">Clear All Genes</button>
                 </div>
             </div>
+            
+            <div class="control-group">
+                <h3>Active Genes</h3>
+                <div id="active-genes-list" class="active-genes-container">
+                    <!-- Active genes will be shown here -->
+                    <div class="empty-message">No genes selected</div>
+                </div>
+            </div>
             <div class="control-group">
                 <h3>Display Options</h3>
                 <div class="control-item">
@@ -34,54 +42,16 @@
                 </div>
                 <div class="control-item">
                     <label for="point-size-input">Point Size: <span id="point-size-value">2</span></label>
-                    <input type="range" id="point-size-input" min="0.1" max="5" step="0.1" value="2">
+                    <input type="range" id="point-size-input" min="0.1" max="20" step="0.1" value="2">
                 </div>
                 <div class="control-item">
                     <label for="boundary-opacity-input">Boundary Opacity: <span id="boundary-opacity-value">0.5</span></label>
                     <input type="range" id="boundary-opacity-input" min="0" max="1" step="0.05" value="0.5">
                 </div>
             </div>
+
             <div class="control-group">
-                <h3>Gene Transformations</h3>
-                <div class="control-item">
-                    <label for="gene-flip-x-checkbox">
-                        <input type="checkbox" id="gene-flip-x-checkbox">
-                        Flip X Axis
-                    </label>
-                </div>
-                <div class="control-item">
-                    <label for="gene-flip-y-checkbox">
-                        <input type="checkbox" id="gene-flip-y-checkbox">
-                        Flip Y Axis
-                    </label>
-                </div>
-                <div class="control-item">
-                    <label for="gene-swap-xy-checkbox">
-                        <input type="checkbox" id="gene-swap-xy-checkbox">
-                        Swap X and Y Axes
-                    </label>
-                </div>
-            </div>
-            <div class="control-group">
-                <h3>Cell Boundary Transformations</h3>
-                <div class="control-item">
-                    <label for="boundary-flip-x-checkbox">
-                        <input type="checkbox" id="boundary-flip-x-checkbox">
-                        Flip X Axis
-                    </label>
-                </div>
-                <div class="control-item">
-                    <label for="boundary-flip-y-checkbox">
-                        <input type="checkbox" id="boundary-flip-y-checkbox">
-                        Flip Y Axis
-                    </label>
-                </div>
-                <div class="control-item">
-                    <label for="boundary-swap-xy-checkbox">
-                        <input type="checkbox" id="boundary-swap-xy-checkbox">
-                        Swap X and Y Axes
-                    </label>
-                </div>
+                <h3>Cell Boundary Options</h3>
                 <div class="control-item">
                     <label for="inner-coloring-checkbox">
                         <input type="checkbox" id="inner-coloring-checkbox">
@@ -93,20 +63,39 @@
                     <input type="range" id="inner-coloring-opacity-input" min="0" max="1" step="0.05" value="0.5">
                 </div>
             </div>
-            <!-- Intensity controls removed, now using config.js -->
-            <div class="control-group">
-                <h3>Performance</h3>
-                <!-- LOD threshold control removed - always showing all points -->
-                <div class="control-item">
-                    <label for="boundary-subsample-input">Boundary Subsampling: <span id="boundary-subsample-value">10</span></label>
-                    <input type="range" id="boundary-subsample-input" min="1" max="20" step="1" value="10">
-                </div>
-            </div>
+
+            <!-- Performance section removed -->
             <div class="stats">
                 <p>Points Rendered: <span id="points-rendered-value">0</span></p>
                 <p>Boundaries Rendered: <span id="boundaries-rendered-value">0</span></p>
                 <p>FPS: <span id="fps-value">0</span></p>
             </div>
+        </div>
+        <!-- Z-Stack Slider Bar -->
+        <div id="zstack-bar">
+            <label for="zstack-slider-bottom"><b>Z-Stack:</b> <span id="zstack-value-bottom">45</span></label>
+            <input type="range" id="zstack-slider-bottom" min="0" max="59" step="1" value="45">
+        </div>
+    </div>
+
+    <!-- Gene Customization Tooltip -->
+    <div id="gene-customize-tooltip" class="customize-tooltip">
+        <div class="customize-tooltip-header">
+            <span id="customize-gene-name"></span>
+            <span class="close-tooltip">&times;</span>
+        </div>
+        <div class="customize-tooltip-body">
+            <div class="customize-option">
+                <label for="gene-color-picker">Color:</label>
+                <input type="color" id="gene-color-picker">
+            </div>
+            <div class="customize-option">
+                <label for="gene-scale-slider">Size: <span id="gene-scale-value">1.0</span>×</label>
+                <input type="range" id="gene-scale-slider" min="0.1" max="3" step="0.1" value="1.0">
+            </div>
+        </div>
+        <div class="customize-tooltip-footer">
+            <button id="reset-gene-customization">Reset</button>
         </div>
     </div>
 

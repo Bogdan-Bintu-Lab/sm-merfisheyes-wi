@@ -26,6 +26,7 @@ export const store = {
         geneData: {},       // Object with gene names as keys and point data as values
         pointsRendered: 0,
         geneColors: {},     // Object with gene names as keys and color values
+        geneCustomizations: {}, // Object with gene names as keys and customization objects (color, scale)
         
         // Gene transformations
         geneFlipX: false,
@@ -54,7 +55,10 @@ export const store = {
         
         // Debounce control
         lastGeneChangeTime: 0,
-        geneChangeDebounceMs: 300 // Debounce time in milliseconds
+        geneChangeDebounceMs: 300, // Debounce time in milliseconds
+        
+        // Z-Stack control
+        zstack: 54
     },
     
     // Subscribers
@@ -232,6 +236,11 @@ export const store = {
             boundaryFlipY: this.get('boundaryFlipY'),
             boundarySwapXY: this.get('boundarySwapXY')
         });
+        
+        // Populate gene selector - this is the ONE place it should be called
+        // if (typeof window.populateGeneSelector === 'function') {
+        //     window.populateGeneSelector();
+        // }
     },
     
     /**
@@ -249,7 +258,7 @@ export const store = {
         // Get initial value with a fallback
         const initialValue = this.get(key);
         const defaultValues = {
-            'pointSize': 2.0,
+            'pointSize': 1000.0,
             // lodThreshold removed - always showing all points
             'boundaryOpacity': 0.5,
             'boundarySubsample': 10,
@@ -447,5 +456,4 @@ export const store = {
     }
 };
 
-// Initialize UI bindings
-store.initUIBindings();
+// UI bindings are initialized in main.js when DOM is ready

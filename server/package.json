@@ -1,0 +1,18 @@
+{
+  "name": "merfisheyes-server",
+  "version": "1.0.0",
+  "description": "Backend server for MERFISH visualization",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "compression": "^1.7.4"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
