@@ -132,99 +132,54 @@ export class GeneLoader {
                 console.log('No gene name provided, skipping');
                 return;
             }
-            
-            const response = await fetch(config.dataPaths.getGeneDataPath(geneName));
-            const arrayBuffer = await response.arrayBuffer();
-            const text = pako.inflate(arrayBuffer, { to: 'string' });
-            const geneData = JSON.parse(text);
-            
-            // Process the flattened coordinates with offsets
-            const pointsData = [];
-            const points = geneData.points;
-            const offsets = geneData.offsets;
-            
-            for (let i = 0; i < offsets.length; i++) {
-                const start = offsets[i];
-                const end = offsets[i + 1] || points.length;
-                
-                // Extract the points for this gene
-                for (let j = start; j < end; j += 2) {
-                    pointsData.push({
-                        x: points[j],
-                        y: points[j + 1]
-                    });
-                }
-            }
-            
-            // Check if this gene is already loaded
-            if (this.loadedGenes[geneName]) {
-                console.log(`Gene ${geneName} is already loaded, skipping`);
-                return;
-            }
-        }
-        catch (error) {
-            console.error('Error during gene data initialization:', error);
-        }
-        
-        try {
-            document.querySelector('#loading-status').querySelector('p').textContent = `Loading gene data... for gene: ${geneName}`;
-            console.log(`Loading gene data for ${geneName}...`);
-            
-            // Fetch gzipped CSV data using the config path
+
+            // Fetch and parse the gene data
             const response = await fetch(config.dataPaths.getGeneDataPath(geneName));
             if (!response.ok) {
-                throw new Error(`Failed to load gene data for ${geneName}: ${response.status} ${response.statusText}`);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-            // Get the compressed data as an ArrayBuffer
-            document.querySelector('#loading-status').querySelector('p').textContent = `Fetching gene data... for gene: ${geneName}`;
-            const compressedData = await response.arrayBuffer();
-            // console.log(`Received compressed data, size: ${compressedData.byteLength} bytes`);
-            // console.log('First 100 bytes:', new Uint8Array(compressedData).slice(0, 4));
-            document.querySelector('#loading-status').querySelector('p').textContent = "Unzipping...";
-            const unzippedData = new Uint8Array(compressedData);
-            // console.log(`Unzipped data size: ${unzippedData.length} bytes`);
-            document.querySelector('#loading-status').querySelector('p').textContent = "Decompressing...";
-            const decompressed = new TextDecoder().decode(unzippedData);
+            const arrayBuffer = await response.arrayBuffer();
+            const text = new TextDecoder().decode(arrayBuffer);
+            const geneData = JSON.parse(text);
+            console.log(`Successfully loaded and parsed ${geneName}`);
+            console.log('Gene data structure:', geneData);
+
+            // Validate the data structure
+            if (!geneData.layers || !geneData.layers["0"] || !geneData.layers["0"].coordinates) {
+                throw new Error('Invalid gene data format: missing layers or coordinates');
+            }
+
+            // Process the coordinates
             // console.log(`Decompressed text length: ${decompressed.length} characters`);
             // console.log('First 100 characters:', decompressed.substring(0, 100));
             document.querySelector('#loading-status').querySelector('p').textContent = "Preprocessing complete. Beginning rendering...";
             
-            // Parse CSV data
-            const lines = decompressed.split('\n');
+            // Process the coordinates from the JSON data
             const pointsData = [];
+            const coordinates = geneData.layers["0"].coordinates;
             
-            // Skip header row and process data rows
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
+            for (let i = 0; i < coordinates.length; i += 2) {
+                const x = coordinates[i];
+                const y = coordinates[i + 1];
                 
-                const parts = line.split(',');
-                if (parts.length >= 2) {
-                // if (parts.length >= 4) {
-                    const x = parseFloat(parts[0]);
-                    const y = parseFloat(parts[1]);
-                    // const z = parseFloat(parts[2]);
-                    // const intensity = parseFloat(parts[3]);
+                if (!isNaN(x) && !isNaN(y)) {
+                    let point = { x, y };
                     
-                    if (!isNaN(x) && !isNaN(y)) {
-                        let point = { x, y };
-                        
-                        // Apply current transformations to the point
-                        if (this.transformationState.flipX) {
-                            point.x = -x;
-                        }
-                        if (this.transformationState.flipY) {
-                            point.y = -y;
-                        }
-                        if (this.transformationState.swapXY) {
-                            const temp = point.x;
-                            point.x = point.y;
-                            point.y = temp;
-                        }
-                        
-                        pointsData.push(point);
+                    // Apply current transformations to the point
+                    if (this.transformationState.flipX) {
+                        point.x = -x;
                     }
+                    if (this.transformationState.flipY) {
+                        point.y = -y;
+                    }
+                    if (this.transformationState.swapXY) {
+                        const temp = point.x;
+                        point.x = point.y;
+                        point.y = temp;
+                    }
+                    
+                    pointsData.push(point);
                 }
             }
             
@@ -247,9 +202,9 @@ export class GeneLoader {
             const geneSize = store.get('pointSizes')[geneName] || 2.0;
             
             // Update store with this gene's data
-            const geneData = store.get('geneData') || {};
-            geneData[geneName] = pointsData;
-            store.set('geneData', geneData);
+            const storeGeneData = store.get('geneData') || {};
+            storeGeneData[geneName] = pointsData;
+            store.set('geneData', storeGeneData);
             
             // Initial LOD update for this gene
             this.updateLOD(geneName, geneColor, geneSize);
@@ -280,9 +235,9 @@ export class GeneLoader {
             const geneColor = store.get('geneColors')[geneName] || '#ffffff';
             
             // Update store with this gene's data
-            const geneData = store.get('geneData') || {};
-            geneData[geneName] = mockGeneData;
-            store.set('geneData', geneData);
+            const storeGeneData = store.get('geneData') || {};
+            storeGeneData[geneName] = mockGeneData;
+            store.set('geneData', storeGeneData);
             
             // Initial LOD update for this gene
             this.updateLOD(geneName, geneColor, 2.0);

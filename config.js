@@ -24,7 +24,7 @@ export const config = {
         
         // Function to get the gene data path
         getGeneDataPath: function(geneName) {
-            return `${this.getDatasetPath()}/genes_csv_gz/${geneName}.csv.gz`;
+            return `${this.getDatasetPath()}/genes_json_gz/${geneName}.json.gz`;
         },
         
         // Function to get the cell boundaries path
