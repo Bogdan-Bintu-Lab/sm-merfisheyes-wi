@@ -8,6 +8,7 @@ import { store } from './store.js';
 import { config } from './config.js';
 import palette from './data/pei/palette.json' assert { type: 'json' };
 import clusterList from './data/pei/cluster_list.json' assert { type: 'json' };
+import pako from 'pako';
 
 export class CellBoundaries {
     constructor(scene) {
@@ -61,10 +62,10 @@ export class CellBoundaries {
             console.log('Loading cell boundaries...');
             
             // Fetch boundary data using the config path
-            document.querySelector('#loading-status').querySelector('p').textContent = 'Extracting from JSON...';
+            document.querySelector('#loading-status').querySelector('p').textContent = 'Loading cell boundaries...';
             const response = await fetch(config.dataPaths.getCellBoundariesPath());
             const boundaryData = await response.json();
-            document.querySelector('#loading-status').querySelector('p').textContent = 'Extraction Complete. Processing...';
+            document.querySelector('#loading-status').querySelector('p').textContent = 'Boundaries loaded. Processing...';
             
             // Store original boundaries
             this.originalBoundaries = boundaryData;
@@ -97,15 +98,33 @@ export class CellBoundaries {
      * @returns {Array} Processed boundary data
      */
     processBoundaryData(boundaryData) {
-        // Based on the observed structure, the cell_boundaries.json file contains an array of arrays,
-        // where each inner array represents a cell boundary as a list of points
-        return boundaryData.map((cellPoints, index) => {
-            return {
-                id: `cell-${index}`,
+        // Process the flattened coordinates with offsets
+        console.log(boundaryData)
+        const cellBoundaries = [];
+        const points = boundaryData.points;
+        const offsets = boundaryData.cellOffsets;
+        
+        for (let i = 0; i < offsets.length - 1; i++) {
+            const start = offsets[i];
+            const end = offsets[i + 1];
+            
+            // Extract the points for this cell
+            const cellPoints = [];
+            for (let j = start; j < end; j += 2) {
+                cellPoints.push({
+                    x: points[j],
+                    y: points[j + 1]
+                });
+            }
+            
+            cellBoundaries.push({
+                id: `cell-${i}`,
                 boundary: cellPoints,
-                clusterId: index
-            };
-        });
+                clusterId: i
+            });
+        }
+        
+        return cellBoundaries;
     }
     
     /**

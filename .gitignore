@@ -57,3 +57,6 @@ yarn-error.log*
 yinan/
 .venv/
 data/
+example_data/
+notebooks/
+processing_notebooks/

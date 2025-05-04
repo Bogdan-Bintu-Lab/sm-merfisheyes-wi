@@ -120,7 +120,7 @@ export class GeneLoader {
     }
     
     /**
-     * Load gene data from gzipped CSV file
+     * Load gene data from gzipped JSON file
      * @param {string} geneName - Name of the gene to load
      */
     async loadGeneData(geneName) {
@@ -131,6 +131,29 @@ export class GeneLoader {
             if (!geneName) {
                 console.log('No gene name provided, skipping');
                 return;
+            }
+            
+            const response = await fetch(config.dataPaths.getGeneDataPath(geneName));
+            const arrayBuffer = await response.arrayBuffer();
+            const text = pako.inflate(arrayBuffer, { to: 'string' });
+            const geneData = JSON.parse(text);
+            
+            // Process the flattened coordinates with offsets
+            const pointsData = [];
+            const points = geneData.points;
+            const offsets = geneData.offsets;
+            
+            for (let i = 0; i < offsets.length; i++) {
+                const start = offsets[i];
+                const end = offsets[i + 1] || points.length;
+                
+                // Extract the points for this gene
+                for (let j = start; j < end; j += 2) {
+                    pointsData.push({
+                        x: points[j],
+                        y: points[j + 1]
+                    });
+                }
             }
             
             // Check if this gene is already loaded
