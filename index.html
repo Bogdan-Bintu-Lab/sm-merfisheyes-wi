@@ -13,6 +13,15 @@
         <div id="controls">
             <!-- Dataset selection removed, now using config.js -->
             <div class="control-group">
+                <h3>Dataset Options</h3>
+                <div class="control-item">
+                    <label for="dataset-variant-select">Dataset Variant:</label>
+                    <select id="dataset-variant-select">
+                        <!-- Options will be populated dynamically from config -->
+                    </select>
+                </div>
+            </div>
+            <div class="control-group">
                 <h3>Gene Selection</h3>
                 <div class="control-item">
                     <input type="text" id="gene-search" placeholder="Search genes...">
@@ -32,6 +41,8 @@
                     <div class="empty-message">No genes selected</div>
                 </div>
             </div>
+
+
             <div class="control-group">
                 <h3>Display Options</h3>
                 <div class="control-item">
@@ -40,17 +51,27 @@
                         Show Cell Boundaries
                     </label>
                 </div>
+                <div class="control-item" id="nuclei-controls" style="display: none;">
+                    <label for="show-nuclei-checkbox">
+                        <input type="checkbox" id="show-nuclei-checkbox" checked>
+                        Show Cell Nuclei
+                    </label>
+                </div>
                 <div class="control-item">
-                    <label for="point-size-input">Point Size: <span id="point-size-value">2</span></label>
-                    <input type="range" id="point-size-input" min="0.1" max="20" step="0.1" value="2">
+                    <label for="point-size-input">Point Size: <span id="point-size-value">3.5</span></label>
+                    <input type="range" id="point-size-input" min="0.1" max="3.0" step="0.1" value="1.0">
                 </div>
                 <div class="control-item">
                     <label for="boundary-opacity-input">Boundary Opacity: <span id="boundary-opacity-value">0.5</span></label>
                     <input type="range" id="boundary-opacity-input" min="0" max="1" step="0.05" value="0.5">
                 </div>
+                <div class="control-item" id="nuclei-opacity-control" style="display: none;">
+                    <label for="nuclei-opacity-input">Nuclei Opacity: <span id="nuclei-opacity-value">0.7</span></label>
+                    <input type="range" id="nuclei-opacity-input" min="0" max="1" step="0.05" value="0.7">
+                </div>
             </div>
 
-            <div class="control-group">
+            <!-- <div class="control-group">
                 <h3>Cell Boundary Options</h3>
                 <div class="control-item">
                     <label for="inner-coloring-checkbox">
@@ -62,19 +83,20 @@
                     <label for="inner-coloring-opacity-input">Inner Coloring Opacity: <span id="inner-coloring-opacity-value">0.5</span></label>
                     <input type="range" id="inner-coloring-opacity-input" min="0" max="1" step="0.05" value="0.5">
                 </div>
-            </div>
+            </div> -->
 
             <!-- Performance section removed -->
-            <div class="stats">
+            <!-- <div class="stats">
                 <p>Points Rendered: <span id="points-rendered-value">0</span></p>
                 <p>Boundaries Rendered: <span id="boundaries-rendered-value">0</span></p>
                 <p>FPS: <span id="fps-value">0</span></p>
-            </div>
+            </div> -->
         </div>
         <!-- Z-Stack Slider Bar -->
         <div id="zstack-bar">
             <label for="zstack-slider-bottom"><b>Z-Stack:</b> <span id="zstack-value-bottom">45</span></label>
             <input type="range" id="zstack-slider-bottom" min="0" max="59" step="1" value="45">
+            <span class="layer-range-info" style="display: none;">Range: <span id="layer-min">0</span>-<span id="layer-max">59</span></span>
         </div>
     </div>
 
@@ -100,6 +122,6 @@
     </div>
 
     <!-- Application scripts -->
-    <script type="module" src="main.js"></script>
+    <script type="module" src="/src/main.js"></script>
 </body>
 </html>

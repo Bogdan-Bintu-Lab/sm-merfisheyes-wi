@@ -6,10 +6,10 @@
  */
 
 import * as THREE from 'three';
-import { store } from './store.js';
-import { updateDataBounds } from './main.js';
+import { store } from './src/store.js';
+import { updateDataBounds } from './src/main.js';
 import pako from 'pako';
-import { config } from './config.js';
+import { config } from './src/config.js';
 
 export class GeneLoader {
     constructor(scene) {
@@ -51,16 +51,16 @@ export class GeneLoader {
         store.subscribe('pointSize', () => this.updatePointSize());
         
         // Use debounced update for camera distance to avoid too frequent updates
-        let lodUpdateTimeout;
-        store.subscribe('cameraDistance', () => {
-            clearTimeout(lodUpdateTimeout);
-            lodUpdateTimeout = setTimeout(() => this.updateLOD(), 100);
-        });
+        // let lodUpdateTimeout;
+        // store.subscribe('cameraDistance', () => {
+        //     clearTimeout(lodUpdateTimeout);
+        //     lodUpdateTimeout = setTimeout(() => this.updateLOD(), 100);
+        // });
         
         // Subscribe to intensity settings changes
-        store.subscribe('useIntensityColor', () => this.updateLOD());
-        store.subscribe('intensityMin', () => this.updateLOD());
-        store.subscribe('intensityMax', () => this.updateLOD());
+        // store.subscribe('useIntensityColor', () => this.updateLOD());
+        // store.subscribe('intensityMin', () => this.updateLOD());
+        // store.subscribe('intensityMax', () => this.updateLOD());
         
         // Subscribe to gene customization changes
         store.subscribe('geneCustomizations', (customizations) => {
@@ -68,10 +68,17 @@ export class GeneLoader {
             this.updateAllLayersForCustomizedGenes(customizations);
         });
         
-        // Subscribe to gene color changes
+        // Subscribe to gene color changes with debouncing
+        let geneColorsUpdateTimeout;
         store.subscribe('geneColors', (colors) => {
-            console.log('Gene colors changed, updating all layers');
-            this.updateAllLayersForColorChanges(colors);
+            // Clear any pending updates
+            clearTimeout(geneColorsUpdateTimeout);
+            
+            // Set a timeout to update colors after a delay
+            geneColorsUpdateTimeout = setTimeout(() => {
+                console.log('Gene colors changed, updating all layers (debounced)');
+                this.updateAllLayersForColorChanges(colors);
+            }, 300); // 300ms delay to batch updates
         });
         
         // Initialize transformation state
@@ -214,10 +221,13 @@ export class GeneLoader {
             geneData[geneName] = processedData;
             store.set('geneData', geneData);
             
-            // Initial LOD update for this gene
-            this.updateLOD(geneName, geneColor);
+            // Get current z-stack
+            const currentZstack = store.get('zstack').toString();
             
-            // Update visible layers based on current z-stack
+            // Only create points for current z-stack initially
+            this.updateLOD(geneName, geneColor, currentZstack);
+            
+            // Update visible layers
             this.updateVisibleLayers();
             
             console.log(`Loaded gene ${geneName} with layers: ${Object.keys(processedData).join(', ')}`);
@@ -307,22 +317,34 @@ export class GeneLoader {
             if (!this.loadedGenes[geneName]) return;
             
             // Skip if gene points groups not initialized
-            if (!this.genePointsGroups[geneName]) return;
+            if (!this.genePointsGroups[geneName]) {
+                // Initialize the gene points groups structure if needed
+                this.genePointsGroups[geneName] = {};
+            }
             
-            // Hide all layers
+            // First, hide all layers for this gene
             Object.keys(this.genePointsGroups[geneName]).forEach(layer => {
                 if (this.genePointsGroups[geneName][layer]) {
                     this.genePointsGroups[geneName][layer].visible = false;
                 }
             });
             
-            // Show only the current layer if it exists
+            // Check if we have the points group for this z-stack
             if (this.genePointsGroups[geneName][currentZstack]) {
+                // If we have the points group, make it visible
                 this.genePointsGroups[geneName][currentZstack].visible = true;
             } else if (this.originalPointsData[geneName] && 
-                       this.originalPointsData[geneName][currentZstack]) {
-                // If the layer exists in data but not in scene, create it
-                this.updateLOD(geneName, null, currentZstack);
+                      this.originalPointsData[geneName][currentZstack] &&
+                      !this.genePointsGroups[geneName][currentZstack]) {
+                // Only create new points group if we have original data and haven't created it yet
+                const geneColor = store.get('geneColors')[geneName] || '#ffffff';
+                this.updateLOD(geneName, geneColor, currentZstack);
+            } else {
+                // If we don't have data for this z-stack, log it
+                console.log(`No data available for gene ${geneName} at z-stack ${currentZstack}`);
+                
+                // For now, we'll keep the gene hidden until data is loaded
+                // The gene will become visible when the data is loaded and processed
             }
         });
         
@@ -361,18 +383,16 @@ export class GeneLoader {
         
         // Update each gene
         genesToUpdate.forEach(geneName => {
-            // Skip if gene data doesn't exist
-            if (!this.lodLevels[geneName]) {
+            if (!this.loadedGenes[geneName] || !this.originalPointsData[geneName]) return;
+            
+            // Skip if we don't have data for this layer
+            if (!this.originalPointsData[geneName][currentZstack]) {
+                console.log(`No data for gene ${geneName} at layer ${currentZstack}`);
                 return;
             }
             
-            // Skip if layer data doesn't exist for this gene
-            if (!this.lodLevels[geneName][currentZstack]) {
-                return;
-            }
-            
-            // Get points for this LOD level and layer
-            const pointsToRender = this.lodLevels[geneName][currentZstack][lodLevel];
+            // Get points for this gene and layer
+            const pointsToRender = this.originalPointsData[geneName][currentZstack];
             
             // Safety check - if no points are available, skip this gene/layer
             if (!pointsToRender || pointsToRender.length === 0) {
@@ -393,6 +413,11 @@ export class GeneLoader {
             const geneScale = geneCustomizations[geneName]?.scale || 1.0;
             const basePointSize = store.get('pointSize');
             const pointSize = basePointSize * geneScale;
+            
+            // If no specific layer is provided, use current z-stack
+            if (!specificLayer) {
+                specificLayer = store.get('zstack').toString();
+            }
             
             // If the points for this gene and layer already exist, just update their color and size
             if (this.genePointsGroups[geneName][currentZstack]) {
@@ -621,7 +646,7 @@ export class GeneLoader {
         store.set('pointsRendered', totalPointsRendered);
         
         // Force a render update
-        store.set('forceRender', !store.get('forceRender'));
+        store.set('forceRender', true);
     }
     
     /**
@@ -676,7 +701,7 @@ export class GeneLoader {
         
         // Force a render update if any points were updated
         if (updatedAnyPoints) {
-            store.set('forceRender', !store.get('forceRender'));
+            store.set('forceRender', true);
         }
     }
     
@@ -752,10 +777,6 @@ export class GeneLoader {
         let minX = Infinity;
         let maxX = -Infinity;
         let minY = Infinity;
-        let maxY = -Infinity;
-        
-        // Get current z-stack
-        const currentZstack = store.get('zstack').toString();
         
         // Calculate bounds across all loaded genes for the current layer
         Object.keys(this.loadedGenes).forEach(geneName => {
@@ -868,7 +889,7 @@ export class GeneLoader {
         
         // Force a render update if any points were updated
         if (updatedAnyPoints) {
-            store.set('forceRender', !store.get('forceRender'));
+            store.set('forceRender', true);
         }
     }
     
@@ -879,7 +900,7 @@ export class GeneLoader {
      */
     updateAllLayersForColorChanges(colors) {
         if (!colors) return;
-        console.log('Efficiently updating colors for genes:', Object.keys(colors));
+        // console.log('Efficiently updating colors for genes:', Object.keys(colors));
         
         // Get the genes that have color changes
         const coloredGenes = Object.keys(colors);
@@ -934,7 +955,7 @@ export class GeneLoader {
         
         // Force a render update if any points were updated
         if (updatedAnyPoints) {
-            store.set('forceRender', !store.get('forceRender'));
+            store.set('forceRender', true);
         }
     }
     
