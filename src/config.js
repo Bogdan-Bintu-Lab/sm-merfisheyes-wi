@@ -78,12 +78,18 @@ export const config = {
         
         // Current dataset to use
         currentDataset: 'yinan',
+        // currentDataset: 'pei',
         // Current dataset variant (50pe, 75pe, etc.)
-        currentVariant: '50pe',  // Default to 50pe
+        currentVariant: '6s',  // Default to 50pe
+        // currentVariant: 'set1',  // Default to 50pe
         // Available variants
+        // availableVariants: ['set1'],
         availableVariants: ['50pe', '75pe', '6s'],
         
         // Layer ranges for each variant
+        // variantLayers: {
+        //     'set1': { min: 0, max: 0 },
+        // },
         variantLayers: {
             '50pe': { min: 0, max: 59 },
             '75pe': { min: 0, max: 60 },
@@ -96,6 +102,9 @@ export const config = {
             '75pe': true,
             '6s': true
         },
+        // nucleiSupport: {
+        //     'set1': false,
+        // },
         
         // Check if nuclei visualization is supported for the current variant
         hasNucleiSupport: function() {
@@ -227,10 +236,10 @@ export const config = {
     
     // Visualization settings
     visualization: {
-        defaultPointSize: 1.0,
+        defaultPointSize: 3.0,
         pointSizeRange: {
             min: 0.1,
-            max: 3.0,
+            max: 10.0,
             step: 0.1
         },
         // defaultLodThreshold removed - always showing all points

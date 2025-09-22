@@ -21,7 +21,7 @@ export class Layer {
         this.scene.add(this.pointsGroup);
         
         // Get initial point size from store or config default
-        const initialPointSize = store.get('pointSize') || config.visualization.defaultPointSize;
+        const initialPointSize = store.get('pointSize') * 2
         this.currentPointSize = initialPointSize;
         
         // Create the points geometry
@@ -89,7 +89,7 @@ export class Layer {
                 float baseSize = dotSize * 5.0; // Multiply by 10 for larger base size
                 
                 // Dynamic sizing based on distance
-                float minSize = baseSize * 1.0; // Minimum size is half of base
+                float minSize = baseSize * 0.1; // Minimum size is half of base
                 float maxSize = baseSize * 2.0; // Maximum size is double of base
                 
                 // Simple distance-based scaling
@@ -97,7 +97,8 @@ export class Layer {
                 float finalSize = baseSize * distanceScale;
                 
                 // Clamp to our size range
-                gl_PointSize = clamp(finalSize, minSize, maxSize);
+                // gl_PointSize = clamp(finalSize, minSize, maxSize);
+                gl_PointSize = dotSize*1.7;
                 gl_Position = projectionMatrix * mvPosition;
             }
         `;

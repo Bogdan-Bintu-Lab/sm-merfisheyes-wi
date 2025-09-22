@@ -137,6 +137,9 @@ export class Gene {
     setScale(scale) {
         this.scale = scale;
         const globalSize = store.get('pointSize');
+        console.log("Global size: " + globalSize);
+        console.log("Scale: " + scale);
+        console.log("Scale * globalSize: " + scale * globalSize);
         this.layers.forEach(layer => layer.updatePointSize(scale * globalSize));
     }
     

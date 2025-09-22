@@ -4,6 +4,7 @@ import { store } from './store';
 import { updateDataBounds } from './utils';
 import {config} from './config';
 import pako from 'pako';
+import { loadingIndicator } from './LoadingIndicator.js';
 
 /**
  * GeneLoader class for managing gene data visualization
@@ -25,7 +26,7 @@ export class GeneLoader {
      */
     initializeSubscriptions() {
         // Z-stack changes
-        store.subscribe('zstack', (newZStack) => {
+        store.subscribe('zstackImmediate', (newZStack) => {
             this.handleZStackChange(newZStack.toString());
         });
         
@@ -42,11 +43,17 @@ export class GeneLoader {
         // Gene customizations
         store.subscribe('geneCustomizations', (customizations) => {
             this.handleGeneCustomizationsChange(customizations);
+            // this.handlePointSizeChange(customizations);
         });
         
         // Gene selection changes
         store.subscribe('selectedGenes', (selectedGenes) => {
             this.handleGeneSelectionChange(selectedGenes);
+        });
+        
+        // Gene visibility changes
+        store.subscribe('visibleGenes', (visibleGenes) => {
+            this.handleGeneVisibilityChange(visibleGenes);
         });
         
         // Transform changes
@@ -64,8 +71,13 @@ export class GeneLoader {
             // Create new gene instance
             const gene = new Gene(geneName, this.scene);
             
-            // Fetch gene data
-            const response = await fetch(config.dataPaths.getGeneDataPath(geneName));
+            // Fetch gene data with progress tracking
+            const geneDataPath = config.dataPaths.getGeneDataPath(geneName);
+            const response = await loadingIndicator.fetchWithProgress(
+                geneDataPath, 
+                {}, 
+                `Loading Gene: ${geneName}`
+            );
             const data = await response.json();
             
             // Load data into gene
@@ -129,10 +141,11 @@ export class GeneLoader {
      * @param {number} newSize
      */
     handlePointSizeChange(newSize) {
+        console.log("New size: " + newSize);
         this.activeGenes.forEach(gene => {
             const customizations = store.get('geneCustomizations') || {};
             const geneScale = customizations[gene.getName()]?.scale || 1.0;
-            gene.setScale(geneScale * newSize);
+            gene.setScale(geneScale);
         });
     }
     
@@ -159,8 +172,7 @@ export class GeneLoader {
         Object.entries(customizations).forEach(([geneName, settings]) => {
             const gene = this.activeGenes.get(geneName);
             if (gene && settings.scale !== undefined) {
-                const globalSize = store.get('pointSize');
-                gene.setScale(settings.scale * globalSize);
+                gene.setScale(settings.scale);
             }
         });
     }
@@ -184,6 +196,23 @@ export class GeneLoader {
         this.activeGenes.forEach((gene, geneName) => {
             if (!(geneName in selectedGenes)) {
                 this.removeGene(geneName);
+            }
+        });
+    }
+    
+    /**
+     * Handle changes to gene visibility state
+     * @param {Object} visibleGenes - Object mapping gene names to visibility state
+     * @private
+     */
+    handleGeneVisibilityChange(visibleGenes) {
+        if (!visibleGenes) return;
+        
+        // Update visibility for all genes based on visibleGenes state
+        this.activeGenes.forEach((gene, geneName) => {
+            if (geneName in visibleGenes) {
+                const isVisible = visibleGenes[geneName];
+                gene.setVisible(isVisible);
             }
         });
     }

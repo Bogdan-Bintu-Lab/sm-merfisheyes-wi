@@ -1,79 +1,353 @@
+/* Base layout */
 body, html {
     margin: 0;
     padding: 0;
     width: 100%;
     height: 100%;
-    font-family: Arial, sans-serif;
     overflow: hidden;
+    background: #000;
 }
 
-#container {
-    display: flex;
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-}
+/* ===== LAYOUT COMPONENTS ===== */
 
+/* Visualization container */
 #visualization {
-    flex: 1 1 0;
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
     height: 100vh;
+    z-index: 1;
     overflow: hidden;
 }
 
+/* Controls panel */
 #controls {
-    width: 22vw; /* or minmax(250px, 400px) for clamp */
-    min-width: 200px;
-    max-width: 400px;
-    height: 100vh;
-    background: #f8f8f8;
-    padding: 20px;
+    position: fixed;
+    top: 80px;
+    left: 20px;
+    width: auto;
+    min-width: auto;
+    max-height: calc(100vh - 100px);
+    padding: 10px;
     box-sizing: border-box;
-    overflow-y: auto;
-    z-index: 1;
+    overflow-y: visible;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
+
+/* Circular Control Groups */
+.control-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    background-color: rgba(30, 30, 35, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 10px;
+    pointer-events: auto; /* Ensure clickability */
+}
+
+.control-circle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    background-color: rgba(40, 40, 45, 0.8);
+}
+
+.control-circle .control-icon {
+    font-size: 24px;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+.control-circle .control-label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wider);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.control-circle .control-content {
+    position: absolute;
+    left: 70px;
+    top: 0;
+    width: 320px;
+    background: rgba(25, 25, 30, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 15px;
+    display: none; /* Hidden by default */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    pointer-events: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+.control-circle .control-content h3 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: 1rem;
+    letter-spacing: var(--letter-spacing-tight);
+}
+
+.control-content .control-item {
+    margin-bottom: 1rem;
+    font-size: var(--font-size-sm);
+}
+
+.control-circle.active {
+    background-color: rgba(65, 105, 225, 0.5);
+    box-shadow: 0 0 15px rgba(65, 105, 225, 0.5);
+    border-color: rgba(100, 150, 255, 0.5);
+    z-index: 100; /* Ensure active circle is above others */
+}
+
+/* THIS IS CRITICAL: Make sure content is visible when circle is active */
+.control-circle.active .control-content {
+    display: block !important;
+    animation: fadeIn 0.2s ease-out;
+    z-index: 101; /* Ensure content is above everything */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Overlay container */
+#overlay-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Z-stack bar */
+#zstack-bar {
+    position: fixed;
+    left: 50%;
+    bottom: 2vw;
+    width: clamp(350px, 60vw, 1900px);
+    transform: translateX(-50%);
+    padding: 0.7em 1.0em;
+    border-radius: 16px;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1em;
+    z-index: 1001;
+    color: white;
+}
+
+#zstack-bar label {
+    margin: 0 8px 0 0;
+    font-size: 1.1em;
+}
+
+#zstack-bar input[type="range"] {
+    width: 80%;
+    margin: 0 12px;
+}
+
+/* ===== CONTROL GROUP STYLING ===== */
 
 .control-group {
     margin-bottom: 20px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 15px;
+    padding: 15px;
+    border-radius: 15px;
 }
 
 .control-group h3 {
     margin-top: 0;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    letter-spacing: 0.5px;
 }
 
 .control-item {
     margin-bottom: 10px;
 }
 
+/* ===== FORM ELEMENTS ===== */
+
+/* Labels */
 label {
     display: block;
     margin-bottom: 5px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
 }
+
+/* Text inputs and selects */
+input[type="text"], select {
+    width: 100%;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+}
+
+input[type="text"]::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Buttons */
+button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+select, button {
+    padding: 5px;
+    margin: 5px 0;
+}
+
+/* Glassmorphism base styles */
+.glass {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 
+        0 25px 23px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 0 4px 2px rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.glass-light {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.glass-dark {
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* Navbar */
+#navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 100;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    pointer-events: auto; /* Enable pointer events for navbar */
+}
+
+.navbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 20px;
+    pointer-events: auto;
+}
+
+.navbar-controls select {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    width: 200px;
+    font-size: 14px;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 36px;
+}
+
+.navbar-brand {
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+    user-select: text; /* Allow text selection */
+}
+
+
+/* ===== GENE CHECKBOX LIST ===== */
 
 .gene-checkbox-list {
     max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
+    overflow-x: hidden;
     border-radius: 4px;
     padding: 5px;
     margin-bottom: 10px;
-    background-color: white;
+    display: flex;
+    flex-direction: column;
 }
 
 .gene-checkbox-item {
-    padding: 3px 5px;
     display: flex;
     align-items: center;
     border-radius: 4px;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    margin-bottom: 2px;
+    user-select: none;
+    width: auto;
+    padding: 1px 2px;
 }
 
 .gene-checkbox-item:hover {
-    background-color: #f0f0f0;
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateX(2px);
 }
 
 .gene-checkbox-item.selected {
@@ -86,6 +360,9 @@ label {
     padding-left: 5px;
     cursor: pointer;
     flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .gene-color-indicator {
@@ -94,6 +371,7 @@ label {
     height: 12px;
     border-radius: 50%;
     margin-left: 5px;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
 }
 
 #gene-search {
@@ -104,91 +382,182 @@ label {
     border-radius: 4px;
 }
 
-#clear-genes-btn {
+/* #clear-genes-btn {
     width: 100%;
     padding: 5px 10px;
     background-color: #f0f0f0;
     border: 1px solid #ddd;
     border-radius: 4px;
     cursor: pointer;
+} */
+
+/* Range input styling */
+.form-range {
+    background: transparent;
 }
 
-#clear-genes-btn:hover {
-    background-color: #e0e0e0;
-}
-
-/* Active genes section */
-.active-genes-container {
-    border: 1px solid #ddd;
+.form-range::-webkit-slider-runnable-track {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 4px;
+    height: 4px;
+}
+
+.form-range::-webkit-slider-thumb {
+    background: white;
+    border: none;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    margin-top: -6px;
+    width: 16px;
+    height: 16px;
+}
+
+.form-range::-moz-range-track {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    height: 4px;
+}
+
+.form-range::-moz-range-thumb {
+    background: white;
+    border: none;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    width: 16px;
+    height: 16px;
+}
+
+.form-range:focus::-webkit-slider-thumb {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2), 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.form-range:focus::-moz-range-thumb {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2), 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== ACTIVE GENES SECTION ===== */
+
+#active-genes-container {
+    position: fixed;
+    top: 70px; /* Position below navbar */
+    right: 20px;
+    width: 300px;
+    border-radius: 15px;
+    padding: 12px;
+    z-index: 90;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: auto; /* Ensure pointer events are enabled */
+}
+
+#active-genes-container.empty {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
+
+.active-genes-header {
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+    font-weight: 600;
+}
+
+.active-genes-container {
     padding: 10px;
-    background-color: white;
-    max-height: 200px; /* Increased height for two columns */
+    max-height: 300px;
     overflow-y: auto;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Two columns by default */
-    grid-gap: 5px; /* Gap between items */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-radius: 10px;
 }
 
 /* Switch to single column on smaller screens */
 @media (max-width: 600px) {
-    .active-genes-container {
-        grid-template-columns: 1fr; /* Single column on small screens */
+    #active-genes-container {
+        width: 200px;
+        right: 10px;
     }
 }
 
 .active-gene-item {
     display: flex;
     align-items: center;
-    padding: 5px 8px;
-    margin-bottom: 0; /* Removed margin-bottom since we're using grid-gap */
-    background-color: #e3f2fd;
-    border-radius: 4px;
-    border-left: 3px solid #2196F3;
+    padding: 6px 12px;
+    /* background-color: rgba(33, 150, 243, 0.15); */
+    border-radius: 20px;
+    border: 1px solid rgba(33, 150, 243, 0.4);
     position: relative;
     min-width: 0; /* Allows text to truncate properly */
+    margin-bottom: 4px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    animation: geneItemAppear 0.3s ease-out;
+    pointer-events: auto; /* Ensure pointer events are enabled */
+    user-select: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes geneItemAppear {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.active-gene-item:hover {
+    background-color: rgba(33, 150, 243, 0.25);
+    border-color: rgba(33, 150, 243, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.active-gene-item:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .active-gene-color {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     margin-right: 8px;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
 }
 
 .active-gene-name {
     flex: 1;
-    font-weight: bold;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.01em;
 }
 
 .active-gene-remove {
     cursor: pointer;
-    color: #999;
+    color: rgba(255, 255, 255, 0.6);
     font-size: 16px;
     padding: 0 5px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
 }
 
 .active-gene-remove:hover {
     color: #f44336;
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .empty-message {
-    color: #999;
-    font-style: italic;
+    color: rgba(255, 255, 255, 0.6);
     text-align: center;
     padding: 10px;
-    grid-column: 1 / -1; /* Span across all columns */
+    width: 100%;
 }
 
-input[type="range"] {
-    width: 80%;
-    vertical-align: middle;
-}
-
-select, button {
-    padding: 5px;
-    margin: 5px 0;
-}
+/* ===== GENE SELECTOR ===== */
 
 #gene-selector {
     display: flex;
@@ -199,6 +568,8 @@ select, button {
     flex: 1;
     margin-right: 10px;
 }
+
+/* ===== MISCELLANEOUS ===== */
 
 .stats {
     font-size: 12px;
@@ -213,11 +584,11 @@ canvas {
     display: block;
 }
 
-/* Hover window styles */
-#hover-window {
+/* ===== TOOLTIPS AND HOVER WINDOWS ===== */
+
+/* Base styles */
+.tooltip, #hover-window {
     position: absolute;
-    top: 0;
-    left: 0;
     pointer-events: none;
     z-index: 1000;
     background: rgba(0, 0, 0, 0.8);
@@ -225,47 +596,27 @@ canvas {
     padding: 10px;
     border-radius: 5px;
     font-family: Arial, sans-serif;
+    max-width: 200px;
     transition: opacity 0.2s ease;
 }
 
-.hover-content {
-    max-width: 200px;
-}
-
-#hover-window.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
-
-#hover-window.visible {
-    opacity: 1;
-}
-
-/* Tooltip styles */
 #tooltip-container {
     position: absolute;
     pointer-events: none;
     z-index: 1000;
 }
 
-.tooltip {
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 10px;
-    border-radius: 5px;
-    font-family: Arial, sans-serif;
-    position: absolute;
-    pointer-events: none;
-    max-width: 200px;
+/* Visibility states */
+.tooltip, #hover-window.hidden {
     opacity: 0;
-    transition: opacity 0.2s ease;
 }
 
-.tooltip.visible {
+.tooltip.visible, #hover-window.visible {
     opacity: 1;
 }
 
-.tooltip-content {
+/* Content styling */
+.tooltip-content, .hover-content {
     margin: 0;
     padding: 0;
 }
@@ -274,6 +625,7 @@ canvas {
     margin: 0 0 5px 0;
     font-size: 14px;
 }
+
 .tooltip p {
     margin: 0;
     padding: 0;
@@ -284,46 +636,16 @@ canvas {
     font-weight: bold;
 }
 
-#zstack-bar {
-    position: fixed;
-    /* Calculate the left offset so the bar is centered in the remaining (100vw - 22vw) area */
-    right: calc(22vw + ((100vw - 22vw) / 2) - (clamp(350px, 60vw, 1900px) / 2));
-    bottom: 2vw;
-    width: clamp(350px, 60vw, 1900px);
-    background: #f8f8f8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 16px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-    padding: 0.7em 1.0em;
-    z-index: 1001;
-    gap: 1em;
-}
-
-#zstack-bar label {
-    margin: 0 8px 0 0;
-    font-size: 1.1em;
-    color: #222;
-}
-
-#zstack-bar input[type="range"] {
-    width: 80%;
-    margin: 0 12px;
-}
-
-/* Gene Customization Tooltip styles */
+/* Gene Customization Tooltip */
 .customize-tooltip {
     display: none;
     position: absolute;
     z-index: 2000;
-    background-color: white;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     width: 250px;
     animation: tooltipFadeIn 0.2s;
-    border: 1px solid #e0e0e0;
     overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 @keyframes tooltipFadeIn {
@@ -331,33 +653,31 @@ canvas {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Header */
 .customize-tooltip-header {
     padding: 8px 12px;
-    background-color: #f0f0f0;
-    border-bottom: 1px solid #e0e0e0;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 #customize-gene-name {
-    font-weight: bold;
-    color: #333;
-    font-size: 14px;
+font-weight: bold;
+font-size: var(--font-size-lg);
 }
 
 .close-tooltip {
-    color: #999;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    line-height: 1;
+font-size: 18px;
+font-weight: bold;
+cursor: pointer;
+opacity: 0.6;
 }
 
 .close-tooltip:hover {
-    color: #333;
+opacity: 1;
 }
 
+/* Body */
 .customize-tooltip-body {
     padding: 12px;
 }
@@ -375,13 +695,11 @@ canvas {
     margin-bottom: 6px;
     font-weight: bold;
     font-size: 13px;
-    color: #555;
 }
 
 .customize-option input[type="color"] {
     width: 100%;
     height: 30px;
-    border: 1px solid #ddd;
     border-radius: 4px;
     cursor: pointer;
 }
@@ -391,23 +709,20 @@ canvas {
     margin: 5px 0;
 }
 
+/* Footer */
 .customize-tooltip-footer {
     padding: 8px 12px;
-    background-color: #f8f8f8;
-    border-top: 1px solid #e0e0e0;
     text-align: right;
 }
 
 #reset-gene-customization {
     padding: 5px 10px;
     border-radius: 4px;
-    border: 1px solid #ddd;
-    background-color: #f0f0f0;
-    color: #333;
     cursor: pointer;
     font-size: 12px;
+    opacity: 0.8;
 }
 
 #reset-gene-customization:hover {
-    background-color: #e0e0e0;
+    opacity: 1;
 }

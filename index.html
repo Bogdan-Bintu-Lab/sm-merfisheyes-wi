@@ -1,77 +1,241 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MERFISH Subcellular Visualization</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div id="container">
-        <div id="visualization"></div>
-        <div id="tooltip-container"></div>
-        <div id="controls">
-            <!-- Dataset selection removed, now using config.js -->
-            <div class="control-group">
-                <h3>Dataset Options</h3>
-                <div class="control-item">
-                    <label for="dataset-variant-select">Dataset Variant:</label>
-                    <select id="dataset-variant-select">
-                        <!-- Options will be populated dynamically from config -->
-                    </select>
-                </div>
-            </div>
-            <div class="control-group">
-                <h3>Gene Selection</h3>
-                <div class="control-item">
-                    <input type="text" id="gene-search" placeholder="Search genes...">
-                </div>
-                <div id="gene-selector" class="gene-checkbox-list">
-                    <!-- Gene checkboxes will be added here dynamically -->
-                </div>
-                <div class="control-item">
-                    <button id="clear-genes-btn">Clear All Genes</button>
-                </div>
-            </div>
-            
-            <div class="control-group">
-                <h3>Active Genes</h3>
-                <div id="active-genes-list" class="active-genes-container">
-                    <!-- Active genes will be shown here -->
-                    <div class="empty-message">No genes selected</div>
-                </div>
-            </div>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- Primary Meta Tags -->
+    <title>
+      MERFISHEYES - Interactive Single Molecule MERFISH Visualization for
+      Zebrafish Embryo
+    </title>
+    <meta
+      name="title"
+      content="MERFISHEYES - Interactive Single Molecule MERFISH Visualization for Zebrafish Embryo"
+    />
+    <meta
+      name="description"
+      content="Advanced 3D visualization tool for single-molecule MERFISH data in zebrafish embryos. Explore spatial transcriptomics with subcellular resolution for RNA imaging and gene expression analysis."
+    />
+    <meta
+      name="keywords"
+      content="single molecule MERFISH, whole embryo MERFISH, RNA imaging, MERFISHEYES, zebrafish embryo, zebrafish imaging, spatial transcriptomics, spatial transcriptomics zebrafish, subcellular zebrafish, gene visualization, 3D transcriptomics, single-cell RNA visualization"
+    />
+    <meta name="author" content="Ignatius Jenie, KJ, Bogdan Bintu Lab" />
 
-            <div class="control-group">
-                <h3>Display Options</h3>
-                <div class="control-item">
-                    <label for="show-boundaries-checkbox">
-                        <input type="checkbox" id="show-boundaries-checkbox" checked>
-                        Show Cell Boundaries
-                    </label>
-                </div>
-                <div class="control-item" id="nuclei-controls" style="display: none;">
-                    <label for="show-nuclei-checkbox">
-                        <input type="checkbox" id="show-nuclei-checkbox" checked>
-                        Show Cell Nuclei
-                    </label>
-                </div>
-                <div class="control-item">
-                    <label for="point-size-input">Point Size: <span id="point-size-value">3.5</span></label>
-                    <input type="range" id="point-size-input" min="0.1" max="3.0" step="0.1" value="1.0">
-                </div>
-                <div class="control-item">
-                    <label for="boundary-opacity-input">Boundary Opacity: <span id="boundary-opacity-value">0.5</span></label>
-                    <input type="range" id="boundary-opacity-input" min="0" max="1" step="0.05" value="0.5">
-                </div>
-                <div class="control-item" id="nuclei-opacity-control" style="display: none;">
-                    <label for="nuclei-opacity-input">Nuclei Opacity: <span id="nuclei-opacity-value">0.7</span></label>
-                    <input type="range" id="nuclei-opacity-input" min="0" max="1" step="0.05" value="0.7">
-                </div>
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://merfisheyes.com/" />
+    <meta
+      property="og:title"
+      content="MERFISHEYES - Interactive Single Molecule MERFISH Visualization for Zebrafish Embryo"
+    />
+    <meta
+      property="og:description"
+      content="Advanced 3D visualization tool for single-molecule MERFISH data in zebrafish embryos. Explore spatial transcriptomics with subcellular resolution for RNA imaging and gene expression analysis."
+    />
+    <meta property="og:image" content="https://merfisheyes.com/preview.jpg" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://merfisheyes.com/" />
+    <meta
+      property="twitter:title"
+      content="MERFISHEYES - Interactive Single Molecule MERFISH Visualization for Zebrafish Embryo"
+    />
+    <meta
+      property="twitter:description"
+      content="Advanced 3D visualization tool for single-molecule MERFISH data in zebrafish embryos. Explore spatial transcriptomics with subcellular resolution for RNA imaging and gene expression analysis."
+    />
+    <meta
+      property="twitter:image"
+      content="https://merfisheyes.com/preview.jpg"
+    />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://merfisheyes.com/" />
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-dark-5@1.1.3/dist/css/bootstrap-dark.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-dark-5@1.1.3/dist/css/bootstrap-dark-plugin.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- Plus Jakarta Sans font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Typography system -->
+    <link rel="stylesheet" href="typography.css" />
+
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- Structured Data / JSON-LD -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "MERFISHEYES",
+        "description": "Advanced 3D visualization tool for single-molecule MERFISH data in zebrafish embryos. Explore spatial transcriptomics with subcellular resolution for RNA imaging and gene expression analysis.",
+        "applicationCategory": "Scientific Visualization",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "keywords": "single molecule MERFISH, whole embryo MERFISH, RNA imaging, zebrafish embryo, spatial transcriptomics"
+      }
+    </script>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+      defer
+    ></script>
+  </head>
+  <body>
+    <!-- Fullscreen visualization container -->
+    <div id="visualization"></div>
+
+    <!-- Overlay containers -->
+    <div id="overlay-container">
+      <!-- Navbar -->
+      <nav id="navbar" class="glass-dark">
+        <div class="navbar-brand font-bold tracking-tight">MERFISHEYES</div>
+        <div class="navbar-controls">
+          <select id="dataset-variant-select" class="font-medium text-sm">
+            <!-- Options will be populated dynamically from config -->
+          </select>
+        </div>
+      </nav>
+      <div id="tooltip-container"></div>
+
+      <!-- Active genes list in top right -->
+      <div id="active-genes-container" class="glass">
+        <div class="active-genes-header text-sm font-medium tracking-wider">
+          Active Genes
+        </div>
+        <div id="active-genes-list" class="active-genes-container">
+          <!-- Active genes will be shown here -->
+          <div class="empty-message text-sm font-medium">No genes selected</div>
+        </div>
+      </div>
+      <div id="controls">
+        <!-- Controls start -->
+        <div class="control-circle glass" data-control="gene-selection">
+          <!-- <div class="control-icon">🧬</div> -->
+          <div class="control-label tracking-wider">Genes</div>
+          <div class="control-content">
+            <h3 class="font-semibold text-lg">Gene Selection</h3>
+            <div class="control-item">
+              <input
+                type="text"
+                id="gene-search"
+                class="text-sm"
+                placeholder="Search genes..."
+              />
             </div>
+            <div id="gene-selector" class="gene-checkbox-list text-sm">
+              <!-- Gene checkboxes will be added here dynamically -->
+            </div>
+            <div class="control-item">
+              <button
+                id="clear-genes-btn"
+                class="btn btn-outline-danger w-100 text-sm font-medium"
+              >
+                Clear All Genes
+              </button>
+            </div>
+          </div>
+        </div>
 
-            <!-- <div class="control-group">
+        <!-- Active genes control removed and moved to top right -->
+
+        <div class="control-circle glass" data-control="display-options">
+          <div class="control-label tracking-wider">Display</div>
+          <div class="control-content">
+            <h3 class="font-semibold text-lg">Display Options</h3>
+            <div class="control-item">
+              <label for="show-boundaries-checkbox" class="text-sm">
+                <input type="checkbox" id="show-boundaries-checkbox" checked />
+                <span class="font-medium">Show Cell Boundaries</span>
+              </label>
+            </div>
+            <div
+              class="control-item"
+              id="nuclei-controls"
+              style="display: none"
+            >
+              <label for="show-nuclei-checkbox" class="text-sm">
+                <input type="checkbox" id="show-nuclei-checkbox" checked />
+                <span class="font-medium">Show Cell Nuclei</span>
+              </label>
+            </div>
+            <div class="control-item">
+              <label for="point-size-input" class="text-sm font-medium"
+                >Point Size: <span id="point-size-value">10.0</span></label
+              >
+              <input
+                type="range"
+                class="form-range"
+                id="point-size-input"
+                min="0.1"
+                max="10.0"
+                step="0.1"
+                value="10.0"
+              />
+            </div>
+            <div class="control-item">
+              <label for="boundary-opacity-input" class="text-sm font-medium"
+                >Cell Opacity:
+                <span id="boundary-opacity-value">0.5</span></label
+              >
+              <input
+                type="range"
+                class="form-range"
+                id="boundary-opacity-input"
+                min="0"
+                max="1"
+                step="0.05"
+                value="0.5"
+              />
+            </div>
+            <div
+              class="control-item"
+              id="nuclei-opacity-control"
+              style="display: none"
+            >
+              <label for="nuclei-opacity-input" class="text-sm font-medium"
+                >Nuclei Opacity:
+                <span id="nuclei-opacity-value">0.7</span></label
+              >
+              <input
+                type="range"
+                class="form-range"
+                id="nuclei-opacity-input"
+                min="0"
+                max="1"
+                step="0.05"
+                value="0.7"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- <div class="control-group">
                 <h3>Cell Boundary Options</h3>
                 <div class="control-item">
                     <label for="inner-coloring-checkbox">
@@ -85,43 +249,117 @@
                 </div>
             </div> -->
 
-            <!-- Performance section removed -->
-            <!-- <div class="stats">
+        <!-- Performance section removed -->
+        <!-- <div class="stats">
                 <p>Points Rendered: <span id="points-rendered-value">0</span></p>
                 <p>Boundaries Rendered: <span id="boundaries-rendered-value">0</span></p>
                 <p>FPS: <span id="fps-value">0</span></p>
             </div> -->
-        </div>
-        <!-- Z-Stack Slider Bar -->
-        <div id="zstack-bar">
-            <label for="zstack-slider-bottom"><b>Z-Stack:</b> <span id="zstack-value-bottom">45</span></label>
-            <input type="range" id="zstack-slider-bottom" min="0" max="59" step="1" value="45">
-            <span class="layer-range-info" style="display: none;">Range: <span id="layer-min">0</span>-<span id="layer-max">59</span></span>
-        </div>
+      </div>
+      <!-- Z-Stack Slider Bar -->
+      <div id="zstack-bar" class="glass">
+        <label for="zstack-slider-bottom" class="form-label"
+          ><b>Z-Stack:</b> <span id="zstack-value-bottom">45</span></label
+        >
+        <input
+          type="range"
+          class="form-range"
+          id="zstack-slider-bottom"
+          min="0"
+          max="59"
+          step="1"
+          value="45"
+        />
+        <span class="layer-range-info" style="display: none"
+          >Range: <span id="layer-min">0</span>-<span id="layer-max"
+            >59</span
+          ></span
+        >
+      </div>
     </div>
 
     <!-- Gene Customization Tooltip -->
-    <div id="gene-customize-tooltip" class="customize-tooltip">
-        <div class="customize-tooltip-header">
-            <span id="customize-gene-name"></span>
-            <span class="close-tooltip">&times;</span>
+    <div id="gene-customize-tooltip" class="customize-tooltip glass">
+      <div class="customize-tooltip-header">
+        <span
+          id="customize-gene-name"
+          class="font-semibold tracking-tight"
+        ></span>
+        <span class="close-tooltip">&times;</span>
+      </div>
+      <div class="customize-tooltip-body">
+        <div class="customize-option">
+          <label for="gene-color-picker" class="text-sm font-medium"
+            >Color:</label
+          >
+          <input type="color" id="gene-color-picker" />
         </div>
-        <div class="customize-tooltip-body">
-            <div class="customize-option">
-                <label for="gene-color-picker">Color:</label>
-                <input type="color" id="gene-color-picker">
-            </div>
-            <div class="customize-option">
-                <label for="gene-scale-slider">Size: <span id="gene-scale-value">1.0</span>×</label>
-                <input type="range" id="gene-scale-slider" min="0.1" max="3" step="0.1" value="1.0">
-            </div>
+        <div class="customize-option">
+          <label for="gene-scale-slider" class="text-sm font-medium"
+            >Size: <span id="gene-scale-value">1.0</span>×</label
+          >
+          <input
+            type="range"
+            class="form-range"
+            id="gene-scale-slider"
+            min="0.1"
+            max="3"
+            step="0.1"
+            value="1.0"
+          />
         </div>
-        <div class="customize-tooltip-footer">
-            <button id="reset-gene-customization">Reset</button>
-        </div>
+      </div>
+      <div class="customize-tooltip-footer">
+        <button id="reset-gene-customization" class="text-sm font-medium">
+          Reset
+        </button>
+      </div>
     </div>
 
     <!-- Application scripts -->
     <script type="module" src="/src/main.js"></script>
-</body>
+
+    <!-- Circular Controls Script -->
+    <script>
+      // Simple direct script for circular controls
+      document.addEventListener("DOMContentLoaded", function () {
+        // Get all control circles
+        const circles = document.querySelectorAll(".control-circle");
+        // console.log('Found', circles.length, 'control circles');
+
+        // Add click handlers to each circle
+        circles.forEach((circle) => {
+          circle.addEventListener("click", function (e) {
+            // Don't toggle if clicking inside content area
+            if (
+              e.target.closest(".control-content") &&
+              !e.target.closest(".control-icon") &&
+              !e.target.closest(".control-label")
+            ) {
+              return;
+            }
+
+            // Toggle this circle
+            const wasActive = this.classList.contains("active");
+
+            // Close all circles first
+            circles.forEach((c) => c.classList.remove("active"));
+
+            // Then open this one if it wasn't already open
+            if (!wasActive) {
+              this.classList.add("active");
+            }
+
+            // Prevent event from bubbling up
+            e.stopPropagation();
+          });
+        });
+
+        // Close all circles when clicking outside
+        document.addEventListener("click", function () {
+          circles.forEach((c) => c.classList.remove("active"));
+        });
+      });
+    </script>
+  </body>
 </html>

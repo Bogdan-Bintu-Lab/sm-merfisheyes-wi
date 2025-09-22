@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite it as below."
+authors:
+  - family-names: "Jenie"
+    given-names: "Ignatius Kresnathan Sjahnir"
+title: "MERFISH Subcellular Visualization Tool"
+version: "1.0.0"
+doi: "10.1101/2024.08.27.609868"
+date-released: 2025-09-22
+repository-code: "https://github.com/kresnajenie/sm-merfisheyes-wi"
