@@ -55,7 +55,7 @@ If you use this code in your research, please cite:
   author = {Ignatius Kresnathan Sjahnir Jenie},
   title = {MERFISH Subcellular Visualization Tool},
   year = {2025},
-  url = {https://github.com/kresnajenie/sm-merfisheyes-wi},
+  url = {https://github.com/Bogdan-Bintu-Lab/sm-merfisheyes-wi},
   doi = {10.1101/2024.08.27.609868},
   version = {1.0.0}
 }
