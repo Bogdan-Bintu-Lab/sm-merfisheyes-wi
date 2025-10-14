@@ -22,20 +22,37 @@ export class UIManager {
      */
     initializeControlButtons() {
         const controlCircles = document.querySelectorAll('.control-circle');
-        
+
         controlCircles.forEach(circle => {
-            circle.addEventListener('click', () => {
+            circle.addEventListener('click', (e) => {
+                // Don't toggle if clicking inside content area (except on icon/label)
+                if (
+                    e.target.closest('.control-content') &&
+                    !e.target.closest('.control-icon') &&
+                    !e.target.closest('.control-label')
+                ) {
+                    return;
+                }
+
                 // Toggle active state for the clicked control
                 const wasActive = circle.classList.contains('active');
-                
+
                 // Close all controls first
                 controlCircles.forEach(c => c.classList.remove('active'));
-                
+
                 // If the control wasn't active before, make it active
                 if (!wasActive) {
                     circle.classList.add('active');
                 }
+
+                // Prevent event from bubbling
+                e.stopPropagation();
             });
+        });
+
+        // Close all controls when clicking outside
+        document.addEventListener('click', () => {
+            controlCircles.forEach(c => c.classList.remove('active'));
         });
     }
     

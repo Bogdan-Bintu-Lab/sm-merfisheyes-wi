@@ -74,6 +74,7 @@ class MERFISHApp {
       );
 
       // Initialize UI components
+      this.uiManager.initializeControlButtons();
       this.uiManager.initializeZStackSlider();
       this.handleDatasetVariantChange();
 

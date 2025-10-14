@@ -57,6 +57,10 @@ yarn-error.log*
 # Vite
 .vite/
 
+# Claude Code & MCP
+.serena/
+.playwright-mcp/
+
 yinan/
 .venv/
 data/

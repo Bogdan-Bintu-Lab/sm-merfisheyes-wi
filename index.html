@@ -380,48 +380,5 @@
 
     <!-- Application scripts -->
     <script type="module" src="/src/main.js"></script>
-
-    <!-- Circular Controls Script -->
-    <script>
-      // Simple direct script for circular controls
-      document.addEventListener("DOMContentLoaded", function () {
-        // Get all control circles
-        const circles = document.querySelectorAll(".control-circle");
-        // console.log('Found', circles.length, 'control circles');
-
-        // Add click handlers to each circle
-        circles.forEach((circle) => {
-          circle.addEventListener("click", function (e) {
-            // Don't toggle if clicking inside content area
-            if (
-              e.target.closest(".control-content") &&
-              !e.target.closest(".control-icon") &&
-              !e.target.closest(".control-label")
-            ) {
-              return;
-            }
-
-            // Toggle this circle
-            const wasActive = this.classList.contains("active");
-
-            // Close all circles first
-            circles.forEach((c) => c.classList.remove("active"));
-
-            // Then open this one if it wasn't already open
-            if (!wasActive) {
-              this.classList.add("active");
-            }
-
-            // Prevent event from bubbling up
-            e.stopPropagation();
-          });
-        });
-
-        // Close all circles when clicking outside
-        document.addEventListener("click", function () {
-          circles.forEach((c) => c.classList.remove("active"));
-        });
-      });
-    </script>
   </body>
 </html>
