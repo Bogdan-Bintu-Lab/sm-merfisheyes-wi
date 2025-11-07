@@ -155,6 +155,12 @@ export class Layer {
      * @param {boolean} visible
      */
     setVisible(visible) {
+        // Guard: Don't change visibility if it's already in the desired state
+        if (this.isVisible === visible && this.pointsGroup.visible === visible) {
+            console.log(`[Layer ${this.zStack}] setVisible(${visible}) - SKIPPED (already ${visible})`);
+            return;
+        }
+        console.log(`[Layer ${this.zStack}] setVisible(${visible}) - was: ${this.isVisible}, pointsGroup exists: ${!!this.pointsGroup}`);
         this.isVisible = visible;
         this.pointsGroup.visible = visible;
     }
@@ -190,17 +196,6 @@ export class Layer {
     updatePointSize(size) {
         if (this.pointsMesh && this.pointsMesh.material.uniforms) {
             this.pointsMesh.material.uniforms.dotSize.value = size;
-        }
-    }
-    
-    /**
-     * Hide layer and trigger render update
-     */
-    dispose() {
-        this.setVisible(false);
-        // Force a render update
-        if (this.pointsGroup) {
-            this.pointsGroup.visible = false;
         }
     }
     
@@ -275,11 +270,19 @@ export class Layer {
      * Clean up THREE.js resources
      */
     dispose() {
+        console.log(`[Layer ${this.zStack}] dispose() called - pointsMesh exists: ${!!this.pointsMesh}, pointsGroup exists: ${!!this.pointsGroup}`);
         if (this.pointsMesh) {
+            console.log(`[Layer ${this.zStack}] Disposing geometry and material`);
             this.pointsMesh.geometry.dispose();
             this.pointsMesh.material.dispose();
             this.pointsGroup.remove(this.pointsMesh);
+            this.pointsMesh = null;
         }
-        this.scene.remove(this.pointsGroup);
+        if (this.pointsGroup) {
+            console.log(`[Layer ${this.zStack}] Removing pointsGroup from scene`);
+            this.scene.remove(this.pointsGroup);
+            this.pointsGroup = null;
+        }
+        console.log(`[Layer ${this.zStack}] dispose() complete`);
     }
 }

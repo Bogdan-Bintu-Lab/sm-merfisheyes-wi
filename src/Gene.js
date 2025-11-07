@@ -95,17 +95,28 @@ export class Gene {
      * @param {string|null} layer - Z-stack identifier or null to hide all
      */
     setVisibleLayer(layer) {
+        // Guard: If we're already showing this layer, do nothing
+        if (this.currentVisibleLayer === layer) {
+            console.log(`[Gene ${this.name}] setVisibleLayer(${layer}) - SKIPPED (already showing ${layer})`);
+            return;
+        }
+
+        console.log(`[Gene ${this.name}] setVisibleLayer(${layer}) - current visible: ${this.currentVisibleLayer}, total layers: ${this.layers.size}`);
+
         // Hide current visible layer if exists
         if (this.currentVisibleLayer && this.layers.has(this.currentVisibleLayer)) {
+            console.log(`[Gene ${this.name}] Hiding previous layer: ${this.currentVisibleLayer}`);
             this.layers.get(this.currentVisibleLayer).setVisible(false);
         }
-        
+
         // Show new layer if specified and exists
         if (layer && this.layers.has(layer)) {
+            console.log(`[Gene ${this.name}] Showing new layer: ${layer}, gene visible: ${this.isVisible}`);
             const newLayer = this.layers.get(layer);
             newLayer.setVisible(this.isVisible);
             this.currentVisibleLayer = layer;
         } else {
+            console.log(`[Gene ${this.name}] No layer to show (layer=${layer}, exists=${this.layers.has(layer)})`);
             this.currentVisibleLayer = null;
         }
     }
@@ -203,18 +214,6 @@ export class Gene {
     }
     
     /**
-     * Hide all layers
-     */
-    dispose() {
-        // Hide all layers
-        this.layers.forEach(layer => {
-            layer.setVisible(false);
-        });
-        this.isVisible = false;
-        this.currentVisibleLayer = null;
-    }
-    
-    /**
      * Check if layer exists
      * @param {string} layer
      * @returns {boolean}
@@ -261,8 +260,16 @@ export class Gene {
      * Clean up resources
      */
     dispose() {
-        this.layers.forEach(layer => layer.dispose());
+        console.log(`[Gene ${this.name}] dispose() called - total layers: ${this.layers.size}`);
+        let layerCount = 0;
+        this.layers.forEach((layer, zStack) => {
+            console.log(`[Gene ${this.name}] Disposing layer ${zStack}`);
+            layer.dispose();
+            layerCount++;
+        });
+        console.log(`[Gene ${this.name}] Disposed ${layerCount} layers, clearing map`);
         this.layers.clear();
         this.currentVisibleLayer = null;
+        console.log(`[Gene ${this.name}] dispose() complete`);
     }
 }

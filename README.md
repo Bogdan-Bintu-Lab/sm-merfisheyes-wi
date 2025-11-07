@@ -29,6 +29,8 @@ The visualization expects two main data sources:
   - Point subsampling for distant views
   - Boundary subsampling to simplify geometry
   - Efficient usage of buffer geometries to reduce memory footprint
+  - Duplicate loading prevention with async gene loading guards
+  - Visibility state guards to prevent redundant Three.js operations
 
 ## Getting Started
 

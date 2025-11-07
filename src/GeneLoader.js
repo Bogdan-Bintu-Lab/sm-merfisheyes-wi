@@ -17,6 +17,7 @@ export class GeneLoader {
     constructor(scene) {
         this.scene = scene;
         this.activeGenes = new Map();
+        this.loadingGenes = new Set(); // Track genes currently being loaded
         this.initializeSubscriptions();
     }
     
@@ -67,34 +68,55 @@ export class GeneLoader {
      * @param {string} geneName
      */
     async loadGene(geneName) {
+        // Guard: Prevent duplicate loading
+        if (this.loadingGenes.has(geneName) || this.activeGenes.has(geneName)) {
+            console.log(`[GeneLoader] SKIPPING load for ${geneName} - already loading or loaded`);
+            return;
+        }
+
+        // Mark as loading immediately
+        this.loadingGenes.add(geneName);
+        console.log(`[GeneLoader] Starting async load for gene: ${geneName}`);
+
         try {
             // Create new gene instance
             const gene = new Gene(geneName, this.scene);
-            
+
             // Fetch gene data with progress tracking
             const geneDataPath = config.dataPaths.getGeneDataPath(geneName);
             const response = await loadingIndicator.fetchWithProgress(
-                geneDataPath, 
-                {}, 
+                geneDataPath,
+                {},
                 `Loading Gene: ${geneName}`
             );
             const data = await response.json();
-            
+
+            console.log(`[GeneLoader] Data fetched for gene: ${geneName}, loading into gene object...`);
+
             // Load data into gene
             await gene.loadData(data);
-            
+
+            console.log(`[GeneLoader] Gene ${geneName} loaded with ${gene.getLayerCount()} layers`);
+
             // Add to active genes
             this.activeGenes.set(geneName, gene);
-            
-            // Set initial visibility based on current z-stack
-            const currentZStack = store.get('zstack').toString();
+
+            // Set initial visibility based on current z-stack (use zstackImmediate for freshest value!)
+            const currentZStack = store.get('zstackImmediate')?.toString() || store.get('zstack').toString();
+            console.log(`[GeneLoader] Setting ${geneName} to current z-stack: ${currentZStack}`);
             gene.setVisibleLayer(currentZStack);
-            
+
+            console.log(`[GeneLoader] Gene ${geneName} fully loaded and visible`);
+
             // Update bounds
             // this.updateDataBounds();
-            
+
         } catch (error) {
             console.error(`Error loading gene ${geneName}:`, error);
+        } finally {
+            // Always remove from loading set when done
+            this.loadingGenes.delete(geneName);
+            console.log(`[GeneLoader] Removed ${geneName} from loading set`);
         }
     }
     
@@ -129,9 +151,14 @@ export class GeneLoader {
      * @param {string} newZStack
      */
     handleZStackChange(newZStack) {
-        this.activeGenes.forEach(gene => {
+        console.log(`[GeneLoader] handleZStackChange(${newZStack}) - active genes: ${this.activeGenes.size}`);
+        let geneCount = 0;
+        this.activeGenes.forEach((gene, geneName) => {
+            console.log(`[GeneLoader] Updating layer for gene: ${geneName}`);
             gene.setVisibleLayer(newZStack);
+            geneCount++;
         });
+        console.log(`[GeneLoader] Updated ${geneCount} genes to layer ${newZStack}`);
         // this.updateDataBounds();
     }
     
