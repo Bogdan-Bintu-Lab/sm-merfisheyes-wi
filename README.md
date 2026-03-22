@@ -1,43 +1,55 @@
-# MERFISH Subcellular Visualization Tool
+# MERFISHEYES — Single Molecule MERFISH Visualization
 
-A high-performance, web-based visualization tool for **MERFISH subcellular data** built with [Three.js](https://threejs.org/).  
-This repository accompanies the paper **"Whole-embryo Spatial Transcriptomics at Subcellular Resolution from Gastrulation to Organogenesis"**.
+A high-performance, web-based visualization tool for **single-molecule MERFISH subcellular data** in zebrafish embryos, built with [Three.js](https://threejs.org/).
+This repository accompanies the paper **"Whole-embryo Spatial Transcriptomics at Subcellular Resolution from Gastrulation to Organogenesis"** ([Wan et al., Science, 2024](https://doi.org/10.1126/science.adt3439)).
+
+**Live:** [sm-schier.merfisheyes.com](https://sm-schier.merfisheyes.com)
 
 ## Features
 
 - **Scalable Visualization** — Render millions of gene expression points smoothly
-- **Cell Boundary \* Nuclei Overlay** — Display segmented cell and nuclei boundaries
-- **Interactive Controls** — Adjustable point size and boundary opacity
+- **Cell Boundary & Nuclei Overlay** — Display segmented cell and nuclei boundaries per z-stack
+- **Interactive Controls** — Adjustable point size, boundary opacity, and per-gene color/scale customization
+- **Multi-gene Selection** — Load and visualize multiple genes simultaneously
+- **Z-Stack Navigation** — Slide through z-stack layers with real-time updates
+- **Three Dataset Variants** — 50% epiboly, 75% epiboly, and 6 somite stages
 
-## Data Structure
+## Architecture
 
-The visualization expects two main data sources:
+The frontend is a Vite + Three.js application deployed on **Vercel**. All data is served as static files from **AWS S3**.
 
-1. **Gene Expression Data**  
-   Located in `genes/` with files named `[GeneName]_coords.json`.  
-   Each file contains an array of points with **x, y** coordinates.
+```
+Browser → S3 (static .json.gz / .json files)
+         ↓
+   Pako decompression (client-side)
+         ↓
+   Three.js point cloud rendering
+```
 
-2. **Cell Boundaries**  
-   Located in `cell_boundaries/cell_boundaries.json`.  
-   Contains polygon data describing cell boundaries.
+### Data on S3
 
-## Implementation Details
+Data is stored in the `single-cell-data-yinan` S3 bucket under `sm-{variant}/` prefixes:
 
-- **Three.js** — WebGL-based rendering for efficient display of points and lines
-- **Reactive Store** — Global state management for real-time UI updates
-- **Performance Optimizations**:
-  - Point subsampling for distant views
-  - Boundary subsampling to simplify geometry
-  - Efficient usage of buffer geometries to reduce memory footprint
-  - Duplicate loading prevention with async gene loading guards
-  - Visibility state guards to prevent redundant Three.js operations
+```
+s3://single-cell-data-yinan/
+  ├── sm-50pe/
+  │   ├── gene_list.json
+  │   ├── clusters.json
+  │   ├── palette.json
+  │   ├── genes_optimized/{GENE}.json.gz
+  │   └── contours/
+  │       ├── contours_processed_compressed/contours_z_{N}_flat.json.gz
+  │       └── contours_nuclei_processed_compressed/contours_nuclei_z_{N}_flat.json.gz
+  ├── sm-75pe/
+  └── sm-6s/
+```
 
 ## Getting Started
 
 ```bash
 # Clone the repository
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
+git clone https://github.com/Bogdan-Bintu-Lab/sm-merfisheyes-wi.git
+cd sm-merfisheyes-wi
 
 # Install dependencies
 npm install
@@ -50,16 +62,15 @@ Open `http://localhost:5173` in your browser.
 
 ## Citation
 
-If you use this code in your research, please cite:
+If you use this tool or data in your research, please cite:
 
-```
-@software{merfish_subcellular_vis,
-  author = {Ignatius Kresnathan Sjahnir Jenie},
-  title = {MERFISH Subcellular Visualization Tool},
-  year = {2025},
-  url = {https://github.com/Bogdan-Bintu-Lab/sm-merfisheyes-wi},
-  doi = {10.1101/2024.08.27.609868},
-  version = {1.0.0}
+```bibtex
+@article{wan2024whole,
+  title={Whole-embryo spatial transcriptomics at subcellular resolution from gastrulation to organogenesis},
+  author={Wan, Yinan and others},
+  journal={Science},
+  year={2026},
+  doi={10.1126/science.adt3439}
 }
 ```
 
