@@ -57,6 +57,9 @@ yarn-error.log*
 # Vite
 .vite/
 
+# Vercel
+.vercel
+
 # Claude Code & MCP
 .serena/
 .playwright-mcp/

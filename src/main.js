@@ -6,6 +6,8 @@
  * Refactored to use class-based architecture
  */
 
+import { inject } from "@vercel/analytics";
+import { injectSpeedInsights } from "@vercel/speed-insights";
 import { store } from "./store.js";
 import { GeneLoader } from "./GeneLoader.js";
 import { CellBoundaries } from "./cellBoundaries.js";
@@ -14,6 +16,9 @@ import { initializeCircularControls } from "./controls.js";
 import { SceneManager } from "./SceneManager.js";
 import { UIManager } from "./UIManager.js";
 import { GeneUIManager } from "./GeneUIManager.js";
+
+inject();
+injectSpeedInsights();
 
 /**
  * Main application class for MERFISH visualization
@@ -174,54 +179,6 @@ class MERFISHApp {
   }
 }
 
-// Initialize the application when the DOM is ready
-document.addEventListener("DOMContentLoaded", async () => {
-  // Only initialize once
-  if (hasInitialized) {
-    console.log(
-      "Application already initialized, skipping duplicate initialization"
-    );
-    return;
-  }
-
-  console.log("DOM loaded, initializing application...");
-  hasInitialized = true;
-
-  // Create a loading indicator
-  const loadingIndicator = document.createElement("div");
-  loadingIndicator.style.position = "fixed";
-  loadingIndicator.style.top = "50%";
-  loadingIndicator.style.left = "50%";
-  loadingIndicator.style.transform = "translate(-50%, -50%)";
-  loadingIndicator.style.padding = "20px";
-  loadingIndicator.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
-  loadingIndicator.style.color = "white";
-  loadingIndicator.style.borderRadius = "5px";
-  loadingIndicator.style.zIndex = "9999";
-  loadingIndicator.textContent = "Initializing...";
-  document.body.appendChild(loadingIndicator);
-
-  try {
-    // Initialize store UI bindings first
-    await Promise.resolve(store.initUIBindings());
-    loadingIndicator.textContent = "Initializing UI...";
-
-    // Initialize the MERFISH application with all managers
-    window.merfishApp = new MERFISHApp();
-    // console.log("merfishApp", window.merfishApp);
-    await window.merfishApp.initialize();
-    loadingIndicator.textContent = "Loading visualization...";
-
-    // Remove loading indicator after a short delay
-    setTimeout(() => {
-      document.body.removeChild(loadingIndicator);
-    }, 1000);
-  } catch (error) {
-    console.error("Error during initialization:", error);
-    loadingIndicator.textContent = "Error initializing application";
-    loadingIndicator.style.backgroundColor = "rgba(255, 0, 0, 0.8)";
-  }
-});
 /**
  * Update camera position and rotation based on data transformations
  * This is kept for backward compatibility

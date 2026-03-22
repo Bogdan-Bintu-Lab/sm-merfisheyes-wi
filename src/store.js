@@ -7,7 +7,7 @@ export const store = {
   // Private state
   _state: {
     // Dataset settings
-    currentDataset: config.dataPaths.currentDataset,
+    currentDataset: 'yinan',
     palette: null,
     clusters: null,
 
@@ -84,8 +84,6 @@ export const store = {
    */
   async loadPaletteAndClusters() {
     const variant = config.dataPaths.currentVariant;
-    const dataset = config.dataPaths.currentDataset;
-
     try {
       // Load palette
       const paletteResponse = await fetch(config.dataPaths.getPalettePath());
@@ -250,7 +248,7 @@ export const store = {
       // });
 
       // Initialize dataset from config
-      this.set("currentDataset", config.dataPaths.currentDataset);
+      this.set("currentDataset", "yinan");
 
       // Bind checkboxes
       this.bindCheckbox("showCellBoundaries", "show-boundaries-checkbox");

@@ -82,14 +82,16 @@ export class GeneLoader {
             // Create new gene instance
             const gene = new Gene(geneName, this.scene);
 
-            // Fetch gene data with progress tracking
+            // Fetch gene data (.json.gz) with progress tracking
             const geneDataPath = config.dataPaths.getGeneDataPath(geneName);
             const response = await loadingIndicator.fetchWithProgress(
                 geneDataPath,
                 {},
                 `Loading Gene: ${geneName}`
             );
-            const data = await response.json();
+            const compressedData = await response.arrayBuffer();
+            const decompressed = pako.ungzip(new Uint8Array(compressedData), { to: 'string' });
+            const data = JSON.parse(decompressed);
 
             console.log(`[GeneLoader] Data fetched for gene: ${geneName}, loading into gene object...`);
 

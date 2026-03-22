@@ -1,140 +1,60 @@
 /**
  * Configuration settings for the application
- * Edit this file to change data paths and other settings
+ * Data is served from S3 static files
  */
 
-// Environment configuration
-const ENV = {
-    LOCAL: 'local',      // Local filesystem access
-    DEV: 'development',  // Development server
-    PROD: 'production'   // Production server
-};
-
-// Get current environment from URL parameter, build mode, or hostname
-function getEnvironment() {
-    // Check if this is a production build
-    try {
-        // This will be defined in Vite builds
-        if (import.meta.env.PROD) {
-            console.log('Production build detected, using production environment');
-            return ENV.PROD;
-        }
-    } catch (e) {
-        // import.meta might not be available in some contexts
-        console.log('Not running in Vite context');
-    }
-    
-    // Check for URL parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const envParam = urlParams.get('env');
-    
-    if (envParam && Object.values(ENV).includes(envParam)) {
-        console.log(`Environment set via URL parameter: ${envParam}`);
-        return envParam;
-    }
-    
-    // Check for hostname-based environment detection
-    const hostname = window.location.hostname;
-    if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
-        console.log('Localhost detected, using local environment');
-        return ENV.LOCAL;
-    } else if (hostname.includes('dev.') || hostname.includes('staging.')) {
-        console.log('Development hostname detected, using development environment');
-        return ENV.DEV;
-    } else if (hostname.includes('prod.') || hostname.includes('merfisheyes.com') || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-        console.log('Production hostname detected, using production environment');
-        return ENV.PROD;
-    }
-    
-    console.log('No environment detected, defaulting to local');
-    return ENV.LOCAL; // Default to local
-}
-
-// Server URLs for different environments
-const SERVER_URLS = {
-    [ENV.LOCAL]: '',  // Empty means use relative paths (local filesystem)
-    [ENV.DEV]: 'http://localhost:3030',  // Development server
-    [ENV.PROD]: 'https://smol-merfish-be.merfisheyes.com'  // Production server (replace with actual URL)
-};
-
-// Current environment
-const currentEnv = getEnvironment();
-console.log(`Running in ${currentEnv} environment`);
+const S3_BASE = "https://single-cell-data-yinan.s3.us-west-2.amazonaws.com";
 
 export const config = {
-    // Environment settings
-    environment: {
-        current: currentEnv,
-        isLocal: currentEnv === ENV.LOCAL,
-        isDev: currentEnv === ENV.DEV,
-        isProd: currentEnv === ENV.PROD,
-        serverUrl: SERVER_URLS[currentEnv]
-    },
-    
     // Data paths
     dataPaths: {
-        // Base path for all data
-        basePath: './data',
-        
-        // Current dataset to use
-        currentDataset: 'yinan',
-        // currentDataset: 'pei',
         // Current dataset variant (50pe, 75pe, etc.)
-        currentVariant: '6s',  // Default to 50pe
-        // currentVariant: 'set1',  // Default to 50pe
+        currentVariant: '6s',
         // Available variants
-        // availableVariants: ['set1'],
         availableVariants: ['50pe', '75pe', '6s'],
-        
+
         // Layer ranges for each variant
-        // variantLayers: {
-        //     'set1': { min: 0, max: 0 },
-        // },
         variantLayers: {
             '50pe': { min: 0, max: 59 },
             '75pe': { min: 0, max: 60 },
             '6s': { min: 0, max: 79 }
         },
-        
+
         // Nuclei visualization support for each variant
         nucleiSupport: {
             '50pe': true,
             '75pe': true,
             '6s': true
         },
-        // nucleiSupport: {
-        //     'set1': false,
-        // },
-        
+
         // Check if nuclei visualization is supported for the current variant
         hasNucleiSupport: function() {
             return this.nucleiSupport[this.currentVariant] || false;
         },
-        
+
         // Get the number of layers for the current variant
         getLayerCount: function() {
             const range = this.variantLayers[this.currentVariant] || { min: 0, max: 0 };
             return range.max - range.min + 1;
         },
-        
+
         // Get the min layer for the current variant
         getMinLayer: function() {
             const range = this.variantLayers[this.currentVariant] || { min: 0, max: 0 };
             return range.min;
         },
-        
+
         // Get the max layer for the current variant
         getMaxLayer: function() {
             const range = this.variantLayers[this.currentVariant] || { min: 0, max: 0 };
             return range.max;
         },
-        
+
         // Initialize dataset variant from URL parameter if present
         initVariantFromURL: function() {
-            // Check for 'data' parameter in URL
             const urlParams = new URLSearchParams(window.location.search);
             const dataParam = urlParams.get('data');
-            
+
             if (dataParam && this.availableVariants.includes(dataParam)) {
                 console.log(`Setting dataset variant from URL parameter: ${dataParam}`);
                 this.currentVariant = dataParam;
@@ -142,12 +62,12 @@ export const config = {
             }
             return false;
         },
-        
-        // Function to get the full path to a dataset
+
+        // Get the S3 base path for the current variant
         getDatasetPath: function() {
-            return `${this.basePath}/${this.currentDataset}/${this.currentVariant}`;
+            return `${S3_BASE}/sm-${this.currentVariant}`;
         },
-        
+
         // Function to set the current variant
         setVariant: function(variant) {
             if (this.availableVariants.includes(variant)) {
@@ -159,81 +79,38 @@ export const config = {
                 return false;
             }
         },
-        
+
         // Function to get the gene list path
         getGeneListPath: function() {
-            if (config.environment.isLocal) {
-                return `${this.getDatasetPath()}/gene_list.json`;
-            } else {
-                return `${config.environment.serverUrl}/api/genes?data=${this.currentVariant}`;
-            }
+            return `${this.getDatasetPath()}/gene_list.json`;
         },
-        
-        // Function to get the gene data path
+
+        // Function to get the gene data path (.json.gz)
         getGeneDataPath: function(geneName) {
-            if (config.environment.isLocal) {
-                return `${this.getDatasetPath()}/genes_optimized/${geneName}.json.gz`;
-            } else {
-                return `${config.environment.serverUrl}/api/genes/${geneName}?data=${this.currentVariant}`;
-            }
+            return `${this.getDatasetPath()}/genes_optimized/${geneName}.json.gz`;
         },
 
         // Function to get the clusters data path
         getClustersPath: function() {
-            if (config.environment.isLocal) {
-                return `${this.getDatasetPath()}/clusters.json`;
-            } else {
-                return `${config.environment.serverUrl}/api/data/${this.currentDataset}/${this.currentVariant}/clusters.json`;
-            }
+            return `${this.getDatasetPath()}/clusters.json`;
         },
 
         // Function to get the palette data path
         getPalettePath: function() {
-            if (config.environment.isLocal) {
-                return `${this.getDatasetPath()}/palette.json`;
-            } else {
-                return `${config.environment.serverUrl}/api/data/${this.currentDataset}/${this.currentVariant}/palette.json`;
-            }
+            return `${this.getDatasetPath()}/palette.json`;
         },
-        
+
         // Function to get the cell boundaries path (compressed)
         getCellBoundariesPath: function(layer) {
-            if (config.environment.isLocal) {
-                return `${this.getDatasetPath()}/contours/contours_processed_compressed/contours_z_${layer}_flat.json.gz`;
-            } else {
-                return `${config.environment.serverUrl}/api/contours/${layer}?data=${this.currentVariant}`;
-            }
+            return `${this.getDatasetPath()}/contours/contours_processed_compressed/contours_z_${layer}_flat.json.gz`;
         },
-        
-        // Function to get the cell boundaries path (uncompressed JSON)
-        getCellBoundariesPathJSON: function(layer) {
-            if (config.environment.isLocal) {
-                // Since we don't have an uncompressed directory, we'll use the raw contours as fallback
-                return `${this.getDatasetPath()}/contours/contours_raw/contours_z_${layer}_flat.json`;
-            } else {
-                return `${config.environment.serverUrl}/api/contours/${layer}?data=${this.currentVariant}`;
-            }
-        },
-        
+
         // Function to get the cell nuclei path (compressed)
         getCellNucleiPath: function(layer) {
-            if (config.environment.isLocal) {
-                return `${this.getDatasetPath()}/contours/contours_nuclei_processed_compressed/contours_nuclei_z_${layer}_flat.json.gz`;
-            } else {
-                return `${config.environment.serverUrl}/api/nuclei/${layer}?data=${this.currentVariant}`;
-            }
-        },
-        
-        // Function to get the cell nuclei path (uncompressed JSON)
-        getCellNucleiPathJSON: function(layer) {
-            if (config.environment.isLocal) {
-                return `${this.getDatasetPath()}/contours/contours_nuclei_processed_uncompressed/contours_nuclei_z_${layer}_flat.json`;
-            } else {
-                return `${config.environment.serverUrl}/api/nuclei/${layer}?data=${this.currentVariant}`;
-            }
+            return `${this.getDatasetPath()}/contours/contours_nuclei_processed_compressed/contours_nuclei_z_${layer}_flat.json.gz`;
         },
     },
-    
+
     // Visualization settings
     visualization: {
         defaultPointSize: 3.0,
@@ -242,7 +119,6 @@ export const config = {
             max: 10.0,
             step: 0.1
         },
-        // defaultLodThreshold removed - always showing all points
         defaultBoundaryOpacity: 0.5,
         defaultBoundarySubsample: 10,
         defaultInnerColoring: true,

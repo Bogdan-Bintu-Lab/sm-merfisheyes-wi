@@ -155,44 +155,7 @@ class BoundaryLayer {
           errorMessage += ` (Status: ${statusMatch[1]})`;
         }
 
-        // Try to fall back to uncompressed path
-        // console.log(`Attempting to load uncompressed data as fallback...`);
-        try {
-          // Get the uncompressed path based on type
-          let jsonPath;
-          if (this.type === "boundaries") {
-            jsonPath =
-              config.dataPaths.getCellBoundariesPathJSON(formattedZstack);
-          } else if (this.type === "nuclei") {
-            jsonPath = config.dataPaths.getCellNucleiPathJSON(formattedZstack);
-          } else {
-            throw new Error(`Unknown boundary type: ${this.type}`);
-          }
-
-          // console.log(`Loading uncompressed data from: ${jsonPath}`);
-
-          // Fetch the uncompressed data
-          const jsonResponse = await fetch(jsonPath, {
-            headers: {
-              "Cache-Control": "no-cache",
-            },
-          });
-
-          if (!jsonResponse.ok) {
-            throw new Error(
-              `Failed to fetch uncompressed data: ${jsonResponse.status} ${jsonResponse.statusText}`
-            );
-          }
-
-          // Parse the JSON data
-          data = await jsonResponse.json();
-          // console.log(`Successfully loaded uncompressed data as fallback`);
-        } catch (fallbackError) {
-          console.error("Fallback to uncompressed data failed:", fallbackError);
-          throw new Error(
-            `${errorMessage}. Fallback also failed: ${fallbackError.message}`
-          );
-        }
+        throw new Error(errorMessage);
       } else {
         throw new Error(
           `Unknown file format. First bytes: 0x${byte1.toString(
